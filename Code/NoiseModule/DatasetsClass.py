@@ -3,23 +3,26 @@ import os
 import numpy as np
 from tensorflow.keras.utils import Sequence
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 class DataGeneratorPickles(Sequence):
 
-    def __init__(self, data_dir, set, steps, model, batch_size=2800, type=np.float64):
+    def __init__(self, data_dir, set, steps, model, batch_size=1, type=np.float64):
 
         data = open(os.path.normpath('/'.join([data_dir, 'DatasetSingleNote_split.pickle'])), 'rb')
         Z = pickle.load(data)
 
         y, keys, velocities, partials, f0, Bs, S, T, N, DCT, attackTimes = Z[set]
         
-        self.N = np.array(N, dtype=type)
+        self.N = np.array(N, dtype=type)/np.max(N)
         self.N = self.N[:, 12000:]
         self.N = self.N[:, len(self.N[0])//2:]
-        
+        self.N = self.N[:, :140000]
+                
         self.ratio = self.N.shape[1] // steps
         self.N = self.N.reshape(-1, steps)
-       
+        self.batch_size = batch_size
+
         ###metadata
         self.f0 = f0.reshape(-1, 1)/np.max(f0)
         self.n_note = f0.shape[0]
@@ -60,11 +63,9 @@ class DataGeneratorPickles(Sequence):
         if self.prev != self.f0[indices[0]] or self.prev_v != self.velocities[indices[0]]:
             self.model.reset_states()
 
-
         self.prev = self.f0[indices[0]]
         self.prev_v = self.velocities[indices[0]]
-   
-        
+
         inputs = [self.f0[indices], self.k[indices], self.velocities[indices]]
         targets = {'output_1': self.rms[indices].reshape(self.batch_size, -1), 'output_2': self.N[indices].reshape(self.batch_size, -1), 'output_3': self.mean[indices].reshape(self.batch_size, -1)}
 

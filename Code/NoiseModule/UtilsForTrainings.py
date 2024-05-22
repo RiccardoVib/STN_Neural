@@ -7,7 +7,7 @@ from librosa import display
 from scipy.io import wavfile
 import librosa.display
 from scipy import fft, signal
-
+from Utils import filterAudio
 
 class MyLRScheduler(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self, initial_learning_rate, training_steps):
@@ -17,7 +17,7 @@ class MyLRScheduler(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __call__(self, step):
         lr = tf.cast(self.initial_learning_rate * (0.25 ** (tf.cast(step / self.steps, dtype=tf.float32))),
                      dtype=tf.float32)
-        return tf.math.maximum(lr, 1e-8)
+        return tf.math.maximum(lr, 1e-6)
 
 
 
@@ -45,9 +45,6 @@ def plotResult(pred, tar, model_save_dir, save_folder, title):
     N_fft = fs * 2
 
     fig, ax = plt.subplots(nrows=1, ncols=1)
-    # ax.plot(predictions, label='pred')
-    # ax.plot(x, label='inp')
-    # ax.plot(y, label='tar')
     ax.plot(tar, label='Target', alpha=0.9)
     ax.plot(pred, label='Prediction', alpha=0.7)
     # ax.label_outer()
@@ -160,7 +157,9 @@ def render_results(preds, rms_v, N_v, model_save_dir, save_folder):
     len = N_v.shape[0]//16
     #len = 1350
     for i in range(0, 16, 1):
-        predictions = np.array(preds[i*len: (i + 1)*len].reshape(-1))
+    
+        predictions = np.array(preds[i*len: (i + 1)*len].reshape(-1), dtype=np.float32)
         N = N_v[i*len: (i + 1)*len].reshape(-1)
+        N = np.array(N, dtype=np.float32)
         #plotResult_(predictions, N, model_save_dir, save_folder, 'N' + str(i))
         predictWaves(predictions, N, model_save_dir, save_folder, 24000, 'N' + str(i))

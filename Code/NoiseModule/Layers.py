@@ -141,46 +141,47 @@ def frequency_impulse_response(magnitudes, window_size):
 
 
 class NoiseGenerator(tf.keras.layers.Layer):
-    def __init__(self, window_size, trainable=False, type=tf.float32):
+    def __init__(self, window_size, ir_size, trainable=False, max_steps=2799.0, type=tf.float32):
         super(NoiseGenerator, self).__init__()
 
         # Amplitude envelope as complex OLA
         self.window_size = window_size
+        self.ir_size = ir_size
         self.hop_size = self.window_size // 2
         self.padding = self.window_size // 2
         self.trainable = trainable
         self.type = type
+        self.max_steps = max_steps
         self.max_ = tf.constant(494.62890625, dtype=self.type)
 
-        self.coeff = tf.keras.layers.Dense(self.window_size, activation=None, name='impulse', trainable=self.trainable, dtype=self.type)
-        self.amps = tf.keras.layers.Dense(120, name='amps', activation='sigmoid', trainable=self.trainable, dtype=self.type)
+        self.coeff = tf.keras.layers.Dense(self.window_size, activation=None, name='impulse', trainable=self.trainable, dtype=self.type)####relu
+        self.amps = tf.keras.layers.Dense(1, name='amps', activation='sigmoid', trainable=self.trainable, dtype=self.type)
         self.mean = tf.keras.layers.Dense(1, name='mean', activation='tanh', trainable=self.trainable, dtype=self.type)
 
     def __call__(self, freq_inputs, vel_inputs, K):
 
         f_n = tf.divide(freq_inputs, self.max_)
-        K = tf.divide(K, 2799.0)
+        K = tf.divide(K, self.max_steps)
         all_inp = tf.keras.layers.Concatenate(axis=-1)([f_n, vel_inputs])
         all_inp = tf.keras.layers.Concatenate(axis=-1)([all_inp, K])
 
         noise_bands = self.coeff(all_inp)
-
-        amps = self.amps(all_inp[0])
-        mean = self.mean(all_inp[0])
-        amps = tf.abs(tf.expand_dims(amps, axis=0))
-
+        #noise_bands = tf.abs(noise_bands)
+        
+        amps = self.amps(all_inp)
+        mean = self.mean(all_inp)
+    
         # Create a sequence of IRs according to input.
-        impulse = frequency_impulse_response(noise_bands, self.window_size)
+        impulse = frequency_impulse_response(noise_bands, self.ir_size)
 
-        # Random uniform noise with range [-1,1]
-        noise = tf.random.normal([impulse.shape[0],
-                  impulse.shape[1],
-                  self.window_size], mean=mean, stddev=1.0, seed=422, dtype=self.type, name='noise') * 2 - 1
-        noise = noise * 0.001
+        noise = tf.random.normal([impulse.shape[0],  self.window_size], mean=mean, stddev=1.0, seed=422, dtype=self.type, name='noise')###mean
+        noise = noise/tf.math.reduce_max(noise)
+
+        impulse = tf.expand_dims(impulse, axis=1)
+        noise = tf.expand_dims(noise, axis=1)
 
         noise = fft_convolve(noise, impulse, 'same', -1)
         noise = tf.signal.overlap_and_add(noise, self.window_size//2)
-        noise = tf.expand_dims(noise, axis=0)
 
         noise = tf.multiply(amps, noise)
 
