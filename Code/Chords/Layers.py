@@ -80,29 +80,3 @@ class EnhancementLayer(tf.keras.layers.Layer):
         x = self.conv3(x)
         x = tf.squeeze(x, axis=-1)
         return x
-    
-class EnhancementLayer2(tf.keras.layers.Layer):
-    def __init__(self, b_size, steps, bias=True, dim=-1, trainable=True, type=tf.float32):
-        super(EnhancementLayer2, self).__init__()
-        self.bias = bias
-        self.steps = steps
-        self.dim = dim
-        self.trainable = trainable
-        self.type = type
-        self.b_size = b_size
-        act=None#'tanh'
-        self.proj = tf.keras.layers.Dense(32*2, batch_input_shape=(self.b_size, self.steps))
-        self.conv = tf.keras.layers.Conv1D(16*2, 3, activation=act)
-        self.conv2 = tf.keras.layers.Conv1D(8*2, 3, activation=act)
-        self.conv3 = tf.keras.layers.Conv1D(4*2, 3, activation=act)
-        self.conv3 = tf.keras.layers.Conv1D(1*2, 3, activation=act)
-        self.conv3 = tf.keras.layers.Conv1D(1, 3, activation=act)
-        
-    def call(self, x):
-        x = self.proj(x)
-        x = tf.expand_dims(x, axis=-1)
-        x = self.conv(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = tf.squeeze(x, axis=-1)
-        return x
