@@ -1,7 +1,7 @@
 import os
 import tensorflow as tf
 from DatasetsClass import DataGeneratorPickles
-from UtilsForTrainings import plotTraining, writeResults, checkpoints, predictWaves, MyLRScheduler, plotResult, PSD_loss
+from UtilsForTrainings import plotTraining, writeResults, checkpoints, predictWaves, MyLRScheduler, plotResult, STFT_loss
 import pickle
 import random
 import numpy as np
@@ -38,7 +38,7 @@ def train(data_dir, **kwargs):
     model = create_tmodel()
     ############################################################
 
-    model.compile(loss=PSD_loss(m=[32, 64, 128, 256, 512]), metrics=['mse', PSD_loss(m=[32, 64, 128, 256, 512])], optimizer=opt)
+    model.compile(loss=STFT_loss(m=[32, 64, 128, 256, 512]), metrics=['mse'], optimizer=opt)
 
     callbacks = []
     scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.25, patience=20)
