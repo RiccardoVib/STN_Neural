@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 import pickle
 from librosa import display
 from scipy.io import wavfile
+import librosa.display
 from scipy import fft, signal
 from tensorflow.keras import backend as K
+
 
 
 class STFT_loss(tf.keras.losses.Loss):
@@ -16,16 +18,26 @@ class STFT_loss(tf.keras.losses.Loss):
         self.m = m
 
     def call(self, y_true, y_pred):
-
         y_true = tf.squeeze(y_true)
         y_pred = tf.squeeze(y_pred)
-        y_true = tf.reshape(y_true, [1, -1]])
+        y_true = tf.reshape(y_true, [1, -1])
         y_pred = tf.reshape(y_pred, [1, -1])
-        loss = 0
-        for i in range(len(self.m)):
 
-            Y_true = K.abs(tf.signal.stft(y_true, frame_length=self.m[i], frame_step=self.m[i] // 4, pad_end=True))
-            Y_pred = K.abs(tf.signal.stft(y_pred, frame_length=self.m[i], frame_step=self.m[i] // 4, pad_end=True))
+        loss = 0
+
+        for i in range(len(self.m)):
+            pad_amount = int(self.m[i] // 2)  # Symmetric even padding like librosa.
+            pads = [[0, 0] for _ in range(len(y_true.shape))]
+            pads[1] = [pad_amount, pad_amount]
+            y_true = tf.pad(y_true, pads, mode='CONSTANT', constant_values=0)
+            y_pred = tf.pad(y_pred, pads, mode='CONSTANT', constant_values=0)
+
+            Y_true = K.abs(
+                tf.signal.stft(y_true, fft_length=self.m[i], frame_length=self.m[i], frame_step=self.m[i] // 4,
+                               pad_end=False))
+            Y_pred = K.abs(
+                tf.signal.stft(y_pred, fft_length=self.m[i], frame_length=self.m[i], frame_step=self.m[i] // 4,
+                               pad_end=False))
 
             Y_true = K.pow(Y_true, 2)
             Y_pred = K.pow(Y_pred, 2)
@@ -35,7 +47,7 @@ class STFT_loss(tf.keras.losses.Loss):
 
             loss += tf.norm((l_true - l_pred), ord=1) + tf.norm((Y_true - Y_pred), ord=1)
 
-        return loss/len(self.m)
+        return loss / len(self.m)
 
     def get_config(self):
         config = {
@@ -44,12 +56,20 @@ class STFT_loss(tf.keras.losses.Loss):
         base_config = super().get_config()
         return {**base_config, **config}
 
+
+
+
+
 class MyLRScheduler(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, initial_learning_rate, training_steps):
-        self.initial_learning_rate = initial_learning_rate
-        self.steps = training_steps
+    def __init__(self, initial_learning_rate, training_steps, epochs, order):
+        self.initial_learning_rate = (initial_learning_rate)
+        self.steps = training_steps  # *epochs
+        self.order = order
+
     def __call__(self, step):
-        lr = tf.cast(self.initial_learning_rate * (0.25 ** (tf.cast(step/self.steps, dtype=tf.float32))), dtype=tf.float32)
+        # return tf.cast(self.initial_learning_rate / ( tf.cast(step/self.steps, dtype=tf.float32) + 1.)**self.order, dtype=tf.float32)
+        lr = tf.cast(self.initial_learning_rate * (0.75 ** (tf.cast(step / self.steps, dtype=tf.float32))),
+                     dtype=tf.float32)
         return tf.math.minimum(lr, 1e-7)
 
 
@@ -71,31 +91,32 @@ def writeResults(results, b_size, learning_rate, model_save_dir, save_folder,
                          'wb'))
 
 
-def plotResult(preds, tars, model_save_dir, save_folder, title):
-
+def plotResult(preds, tars, ref, model_save_dir, save_folder, title):
     fs = 24000
-    N_fft = fs*2
+    N_fft = fs * 2
     for i in range(tars.shape[0]):
-        
         tar = tars[i].reshape(-1)
         pred = preds[i].reshape(-1)
-        
+        ref_v = ref[i].reshape(-1)
+
         fig, ax = plt.subplots(nrows=1, ncols=1)
         display.waveshow(tar, sr=fs, ax=ax, label='Target', alpha=0.9)
+        # display.waveshow(ref, sr=fs, ax=ax, label='ref', alpha=0.9)
         display.waveshow(pred, sr=fs, ax=ax, label='Prediction', alpha=0.7)
         ax.legend(loc='upper right')
-        fig.savefig(model_save_dir + '/' +save_folder + '/' + title + str(i) +'plot.pdf', format='pdf')
+        fig.savefig(model_save_dir + '/' + save_folder + '/' + title + str(i) + 'plot.pdf', format='pdf')
         plt.close('all')
 
-
-        #FFT
+        # FFT
         FFT_t = np.abs(fft.fftshift(fft.fft(tar, n=N_fft))[N_fft // 2:])
         FFT_p = np.abs(fft.fftshift(fft.fft(pred, n=N_fft))[N_fft // 2:])
+        # FFT_r = np.abs(fft.fftshift(fft.fft(ref_v, n=N_fft))[N_fft // 2:])
         freqs = fft.fftshift(fft.fftfreq(N_fft) * fs)
         freqs = freqs[N_fft // 2:]
 
         fig, ax = plt.subplots(1, 1)
-        ax.semilogx(freqs, 20 * np.log10(np.abs(FFT_t)), label='Target',)
+        ax.semilogx(freqs, 20 * np.log10(np.abs(FFT_t)), label='Target', )
+        # ax.semilogx(freqs, 20 * np.log10(np.abs(FFT_r)), label='Target',)
         ax.semilogx(freqs, 20 * np.log10(np.abs(FFT_p)), label='Prediction')
         ax.set_xlabel('Frequency')
         ax.set_ylabel('Magnitude (dB)')
@@ -104,21 +125,23 @@ def plotResult(preds, tars, model_save_dir, save_folder, title):
         ax.legend(loc='upper right')
         fig.savefig(model_save_dir + '/' + save_folder + '/' + title + str(i) + 'FFT.pdf', format='pdf')
         plt.close('all')
-        
-        tar = np.pad(tar, [0, 1200-len(tar)])
-        pred = np.pad(pred, [0, 1200-len(pred)])
+
+        tar = np.pad(tar, [0, 1300 - len(tar)])
+        pred = np.pad(pred, [0, 1300 - len(pred)])
 
         idct_t = scipy.fftpack.idct(tar, type=2, norm='ortho')
         idct_p = scipy.fftpack.idct(pred, type=2, norm='ortho')
-        idct_t = scipy.signal.resample_poly(idct_t, 4, 1)
-        idct_p = scipy.signal.resample_poly(idct_p, 4, 1)
-        
+        #idct_t = scipy.signal.resample_poly(idct_t, 4, 1)
+        #idct_p = scipy.signal.resample_poly(idct_p, 4, 1)
+
         fig, ax = plt.subplots(nrows=1, ncols=1)
         display.waveshow(idct_t, sr=fs, ax=ax, label='Target', alpha=0.9)
+        display.waveshow(ref_v, sr=fs, ax=ax, label='ref', alpha=0.9)
         display.waveshow(idct_p, sr=fs, ax=ax, label='Prediction', alpha=0.7)
         ax.legend(loc='upper right')
         fig.savefig(model_save_dir + '/' + save_folder + '/' + title + str(i) + 'IDCT.pdf', format='pdf')
         plt.close('all')
+
 
 def plotTraining(loss_training, loss_val, model_save_dir, save_folder):
     fig, ax = plt.subplots(nrows=1, ncols=1)
@@ -132,13 +155,13 @@ def plotTraining(loss_training, loss_val, model_save_dir, save_folder):
     plt.close('all')
 
 
-def predictWaves(predictions, y_tests, model_save_dir, save_folder, fs, title):
-    
+def predictWaves(predictions, y_tests, ref_v, model_save_dir, save_folder, fs):
     for i in range(y_tests.shape[0]):
-        
+
         tar = y_tests[i]
-        pred = predictions[i] 
-        
+        pred = predictions[i]
+        ref = ref_v[i]
+
         pred_name = str(i) + 'notransform_pred.wav'
         tar_name = str(i) + 'notransform_tar.wav'
 
@@ -147,28 +170,30 @@ def predictWaves(predictions, y_tests, model_save_dir, save_folder, fs, title):
 
         if not os.path.exists(os.path.dirname(pred_dir)):
             os.makedirs(os.path.dirname(pred_dir))
-        pred = pred.reshape(-1)
-        tar = tar.reshape(-1)
+        pred = np.array(pred, dtype=np.float32).reshape(-1)
+        tar = np.array(tar, dtype=np.float32).reshape(-1)
         wavfile.write(pred_dir, fs, pred)
         wavfile.write(tar_dir, fs, tar)
 
-        tar = np.pad(tar, [0, 1200-len(tar)])
-        pred = np.pad(pred, [0, 1200-len(tar)])
-
+        tar = np.pad(tar, [0, 1300 - len(tar)])
+        pred = np.pad(pred, [0, 1300 - len(pred)])
         idct_t = scipy.fftpack.idct(tar, type=2, norm='ortho')
         idct_p = scipy.fftpack.idct(pred, type=2, norm='ortho')
-        idct_t = scipy.signal.resample_poly(idct_t, 4, 1)
-        idct_p = scipy.signal.resample_poly(idct_p, 4, 1)
-        
+        #idct_t = scipy.signal.resample_poly(idct_t, 4, 1)
+        #idct_p = scipy.signal.resample_poly(idct_p, 4, 1)
+
         pred_name = str(i) + '_idct_pred.wav'
-        tar_name = str(i) +'_idct_tar.wav'
+        tar_name = str(i) + '_idct_tar.wav'
+        ref_name = str(i) + '_idct_ref.wav'
         pred_dir = os.path.normpath(os.path.join(model_save_dir, save_folder, 'WavPredictions', pred_name))
         tar_dir = os.path.normpath(os.path.join(model_save_dir, save_folder, 'WavPredictions', tar_name))
-        idct_p = idct_p.reshape(-1)
-        idct_t = idct_t.reshape(-1)
+        ref_dir = os.path.normpath(os.path.join(model_save_dir, save_folder, 'WavPredictions', ref_name))
+        idct_p = np.array(idct_p, dtype=np.float32).reshape(-1)
+        idct_t = np.array(idct_t, dtype=np.float32).reshape(-1)
+        ref = np.array(ref, dtype=np.float32).reshape(-1)
         wavfile.write(pred_dir, fs, idct_p)
         wavfile.write(tar_dir, fs, idct_t)
-
+        wavfile.write(ref_dir, fs, ref)
 
 
 def plotResult_(pred, tar, model_save_dir, save_folder, title):
@@ -178,6 +203,7 @@ def plotResult_(pred, tar, model_save_dir, save_folder, title):
     ax.legend(loc='upper right')
     fig.savefig(model_save_dir + '/' + save_folder + '/' + title + 'plot.pdf', format='pdf')
     plt.close('all')
+
 
 def checkpoints(model_save_dir, save_folder, name):
     ckpt_path = os.path.normpath(os.path.join(model_save_dir, save_folder, name, 'Checkpoints', 'best', 'best.ckpt'))
