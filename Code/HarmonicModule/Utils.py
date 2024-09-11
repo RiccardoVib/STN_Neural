@@ -3,11 +3,40 @@ import os
 import matplotlib.pyplot as plt
 import pickle
 from librosa import display
-from scipy.io import wavfile
 import librosa.display
 from scipy import fft
 from scipy.signal import butter, lfilter
 import tensorflow as tf
+
+def AttTime(x):
+    _startThreshold = 0.
+    _stopThreshold = 1
+
+    maxvalue = max(x)
+
+    startAttack = 0.0
+    cutoffStartAttack = maxvalue * _startThreshold
+    stopAttack = 0.0
+    cutoffStopAttack = maxvalue * _stopThreshold
+
+    for i in range(len(x)):
+        if (x[i] >= cutoffStartAttack):
+            startAttack = i
+            break
+
+    for i in range(len(x)):
+        if (x[i] >= cutoffStopAttack):
+            stopAttack = i
+            break
+
+    attackStart = startAttack
+    attackStop = stopAttack
+
+    attackTime = attackStop - attackStart
+
+    return np.divide(1., attackTime)
+
+
 
 def tf_float32(x):
   """Ensure array/tensor is a float32 tf.Tensor."""

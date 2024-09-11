@@ -29,15 +29,15 @@ class DataGeneratorPickles(Sequence):
 
         ### add
         S = np.zeros((y.shape[0], y.shape[1]))
-        #attackTimes = np.zeros((y.shape[0]))
+        attackTimes = np.zeros((y.shape[0]))
         for i in range(y.shape[0]):
             D = librosa.stft(y[i])
             D_harmonic, D_percussive = librosa.decompose.hpss(D, margin=10)
             harmonic = librosa.istft(D_harmonic)
             harmonic = np.pad(np.array(harmonic, dtype=type), [0, len(y[0]) - len(harmonic)])
             S[i] = harmonic
-            #attackTime = AttTime(S[i])
-            #attackTimes[i] = attackTime
+            attackTime = AttTime(S[i])
+            attackTimes[i] = attackTime
 
         self.stage = stage
         self.filename = filename
@@ -48,8 +48,6 @@ class DataGeneratorPickles(Sequence):
         w = scipy.signal.windows.tukey(self.batch_size, alpha=0.000005, sym=True).reshape(1,-1)
         self.S = np.array(S[:, :self.batch_size], dtype=type)*w
         self.ratio = self.S.shape[1] // (steps)
-
-        #lim = self.ratio//self.batch_size*self.batch_size
 
         if len(amps.shape) < 3:
             amps = amps[np.newaxis]
@@ -78,7 +76,7 @@ class DataGeneratorPickles(Sequence):
         self.velocities = velocities.reshape(-1, 1)/111
         self.partials = partials.reshape(-1, 6)
         self.B = B
-        #self.attackTimes = np.array(attackTimes, dtype=type).reshape(-1, 1)
+        self.attackTimes = np.array(attackTimes, dtype=type).reshape(-1, 1)
         self.n_note = self.velocities.shape[0]
 
         #########
@@ -88,7 +86,6 @@ class DataGeneratorPickles(Sequence):
         self.k = np.array(self.k, dtype=np.float32)
         self.k = np.repeat(self.k.T, self.n_note, axis=0).reshape(-1, self.minibatch_size, steps)
 
-        #self.y = self.y.reshape(-1, minibatch_size, steps)
         self.S = self.S.reshape(-1, minibatch_size, steps)
 
         self.rms = np.abs(tf.reduce_mean(np.square(self.S), axis=-1)).reshape(-1, minibatch_size, 1)
@@ -98,13 +95,7 @@ class DataGeneratorPickles(Sequence):
         self.partials = np.repeat(self.partials, self.ratio*self.n_note, axis=0).reshape(-1, minibatch_size, 6)
         self.velocities = np.repeat(self.velocities, self.ratio, axis=0).reshape(-1, minibatch_size, 1)
         self.B = np.repeat(self.B, self.ratio*self.n_note, axis=0).reshape(-1, 1, minibatch_size, 1)
-        #self.attackTimes = np.repeat(self.attackTimes, self.ratio, axis=0).reshape(-1, minibatch_size, 1)
-
-        #pad_amount = np.abs(int(2048// 2)) # Symmetric even padding like librosa.
-        #pads = [[0, 0] for _ in range(2)]
-        #pads[1] = [pad_amount, pad_amount]
-
-        #self.pads = pads
+        self.attackTimes = np.repeat(self.attackTimes, self.ratio, axis=0).reshape(-1, minibatch_size, 1)
 
         self.prev = None
         self.prev_v = None
@@ -133,17 +124,11 @@ class DataGeneratorPickles(Sequence):
         self.prev = self.f0[indices[0], 0]
         self.prev_v = self.velocities[indices[0], 0]
 
-        S = tf.pad(self.S[indices, :, :].reshape(1,-1), self.pads, mode='CONSTANT', constant_values=0)
-        self.phase = tf.math.angle(tf.signal.stft(S, frame_length=2048, frame_step=2048, pad_end=True))
-
         inputs = [self.f0[indices], self.k[indices], self.velocities[indices], self.B[indices], self.attackTimes[indices]]
         
         if self.stage == 'B':
             targets = {'output_1': self.partials[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 6)}
-        elif self.stage == 'P':
-                targets = {'output_1': self.phase,
-                           'output_2': self.S[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, self.steps)}
-
+    
         elif self.stage == 'S':
                 targets = {'output_1': self.S[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, self.steps)}
 
