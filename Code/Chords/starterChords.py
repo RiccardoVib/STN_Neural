@@ -6,9 +6,10 @@ MODEL_SAVE_DIR = '../../TrainedModels' #### Models folder
 INFERENCE = False
 LR = 3e-4
 STEPS = 1
-batch_size =60
+batch_size = 24000
 
-MODEL_NAME = 'name' #### Model name
+#b_size
+MODEL_NAME = 'Chord_finals' #### Model name
 EPOCHS = 1000
 trainH(data_dir=DATA_DIR,
       save_folder=MODEL_NAME,

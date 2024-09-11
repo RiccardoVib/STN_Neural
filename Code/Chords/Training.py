@@ -12,7 +12,7 @@ def trainH(data_dir, **kwargs):
     learning_rate = kwargs.get('learning_rate', 3e-4)
     num_steps = kwargs.get('num_steps', 240)
     epochs = kwargs.get('epochs', 1)
-    model_save_dir = kwargs.get('model_save_dir', '../../../TrainedModels')
+    model_save_dir = kwargs.get('model_save_dir', '../../TrainedModels')
     save_folder = kwargs.get('save_folder', 'ED_Testing')
     inference = kwargs.get('inference', False)
     batch_size = kwargs.get('batch_size', 60)
@@ -40,8 +40,8 @@ def trainH(data_dir, **kwargs):
     w = [1., 1.]
     lossesName = ['output_1', 'output_2']
     losses = {
-        lossesName[0]: STFT_loss(m=[32, 64, 128, 256, 512, 1024]),  # S
-        lossesName[1]: "mse",  # rms
+        lossesName[0]: STFT_loss(m=[256, 512, 1024]),  # S
+        lossesName[1]: "mae",  # rms
     }
     lossWeights = {lossesName[0]: w[0], lossesName[1]: w[1]}
     model.compile(loss=losses, loss_weights=lossWeights, optimizer=opt)
@@ -89,7 +89,7 @@ def trainH(data_dir, **kwargs):
                 count = 0
             else:
                 count = count + 1
-                if count == 30:
+                if count == 15:
                     break
             if i % 10 == 0:
                 model.reset_states()
