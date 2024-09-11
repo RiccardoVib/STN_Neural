@@ -37,15 +37,6 @@ class PianoModel(tf.keras.Model):
                                      num_frames=self.num_frames, g=self.g, phan=self.phan, type=type)
         self.deltas = DeltaLayer(trainable=self.train_amps, num_frames=self.num_frames, type=type)
 
-        self.phase = tf.Variable(tf.random.normal([2]), trainable=train_phase)
-        self.phaseNorm = tf.keras.layers.BatchNormalization(trainable=train_phase)
-        pad_amount = tf.abs(int((2048) // 2))  # Symmetric even padding like librosa.
-        pads = [[0, 0] for _ in range(2)]
-        pads[1] = [pad_amount, pad_amount]
-        self.pads = pads
-
-        # self.noise = NoiseGenerator(window_size=128, ir_size=2*(num_frames-1), trainable=train_amps, max_steps=max_steps, type=type)
-
     def __call__(self, inputs, training=False):
         freq_inputs = tf.reshape(inputs[0],
                                  [self.batch_size // self.num_frames, self.num_frames, 1])  # BxDx1  #[self.B, 1]
@@ -155,67 +146,65 @@ class PianoModel(tf.keras.Model):
         #
         # all_harmonics = tf.sin(partials_xt+phase_v)
         all_harmonics = tf.sin(partials_xt)
-        decay_v = tf.multiply(decay_v, tf.expand_dims(attackTime_t, axis=-1))
+        #decay_v = tf.multiply(decay_v, tf.expand_dims(attackTime_t, axis=-1))
         all_harmonics = tf.multiply(decay_v, all_harmonics)
         all_harmonics = tf.math.reduce_sum(all_harmonics, axis=-1, name='reduce_harmonics')  # sum harmonics
 
         # all_harmonics_h = tf.sin(partials_xt_h+phase_h)
         all_harmonics_h = tf.sin(partials_xt_h)
-        decay_h = tf.multiply(decay_h, tf.expand_dims(attackTime_t, axis=-1))
+        #decay_h = tf.multiply(decay_h, tf.expand_dims(attackTime_t, axis=-1))
         all_harmonics_h = tf.multiply(decay_h, all_harmonics_h)
         all_harmonics_h = tf.math.reduce_sum(all_harmonics_h, axis=-1, name='reduce_harmonics')  # sum harmonics
         all_harmonics = tf.add(all_harmonics_h, all_harmonics)
 
         if self.phan:
             ## long
-            # all_harmonics_even = tf.sin(partials_xt_even)
-            # decays_long0 = tf.multiply(decays_long[0], tf.expand_dims(attackTime_t, axis=-1))
-            # all_harmonics_even = tf.multiply(decays_long0, all_harmonics_even)
-            # all_harmonics_even = tf.math.reduce_sum(all_harmonics_even, axis=-1, name='reduce_harmonics')  # sum harmonics
-            # all_harmonics = tf.add(all_harmonics_even, all_harmonics)
-            #
-            # all_harmonics_even = tf.sin(partials_xt_even2)
-            # decays_long1 = tf.multiply(decays_long[1], tf.expand_dims(attackTime_t, axis=-1))
-            # all_harmonics_even = tf.multiply(decays_long1, all_harmonics_even)
-            # all_harmonics_even = tf.math.reduce_sum(all_harmonics_even, axis=-1, name='reduce_harmonics')  # sum harmonics
-            # all_harmonics = tf.add(all_harmonics_even, all_harmonics)
+            all_harmonics_even = tf.sin(partials_xt_even)
+            decays_long0 = decays_long[0]
+            #decays_long0 = tf.multiply(decays_long[0], tf.expand_dims(attackTime_t, axis=-1))
+            all_harmonics_even = tf.multiply(decays_long0, all_harmonics_even)
+            all_harmonics_even = tf.math.reduce_sum(all_harmonics_even, axis=-1, name='reduce_harmonics')  # sum harmonics
+            all_harmonics = tf.add(all_harmonics_even, all_harmonics)
+            
+            all_harmonics_even = tf.sin(partials_xt_even2)
+            decays_long1 = decays_long[1]
+            #decays_long1 = tf.multiply(decays_long[1], tf.expand_dims(attackTime_t, axis=-1))
+            all_harmonics_even = tf.multiply(decays_long1, all_harmonics_even)
+            all_harmonics_even = tf.math.reduce_sum(all_harmonics_even, axis=-1, name='reduce_harmonics')  # sum harmonics
+            all_harmonics = tf.add(all_harmonics_even, all_harmonics)
 
             all_harmonics_odd = tf.sin(partials_xt_odd)
-            decays_long2 = tf.multiply(decays_long[2], tf.expand_dims(attackTime_t, axis=-1))
+            decays_long2 = decays_long[2]
+            #decays_long2 = tf.multiply(decays_long[2], tf.expand_dims(attackTime_t, axis=-1))
             all_harmonics_odd = tf.multiply(decays_long2, all_harmonics_odd)
             all_harmonics_odd = tf.math.reduce_sum(all_harmonics_odd, axis=-1, name='reduce_harmonics')  # sum harmonics
             all_harmonics = tf.add(all_harmonics_odd, all_harmonics)
 
             all_harmonics_odd = tf.sin(partials_xt_odd2)
-            decays_long3 = tf.multiply(decays_long[3], tf.expand_dims(attackTime_t, axis=-1))
+            decays_long3 = decays_long[3]
+            #decays_long3 = tf.multiply(decays_long[3], tf.expand_dims(attackTime_t, axis=-1))
             all_harmonics_odd = tf.multiply(decays_long3, all_harmonics_odd)
             all_harmonics_odd = tf.math.reduce_sum(all_harmonics_odd, axis=-1, name='reduce_harmonics')  # sum harmonics
             all_harmonics = tf.add(all_harmonics_odd, all_harmonics)
 
             all_harmonics_odd = tf.sin(partials_xt_odd3)
-            decays_long4 = tf.multiply(decays_long[4], tf.expand_dims(attackTime_t, axis=-1))
+            decays_long4 = decays_long[4]
+            #decays_long4 = tf.multiply(decays_long[4], tf.expand_dims(attackTime_t, axis=-1))
             all_harmonics_odd = tf.multiply(decays_long4, all_harmonics_odd)
             all_harmonics_odd = tf.math.reduce_sum(all_harmonics_odd, axis=-1, name='reduce_harmonics')  # sum harmonics
             all_harmonics = tf.add(all_harmonics_odd, all_harmonics)
 
-        # noise = self.noise(vel_inputs, index_inputs)
-        # all_harmonics = all_harmonics + noise
 
         alfa = tf.math.reduce_max(tf.abs(all_harmonics), axis=-1, keepdims=True)
         rms = tf.abs(tf.reduce_mean(tf.square(all_harmonics), axis=-1, keepdims=True))
 
-        phase = tf.pad(tf.reshape(all_harmonics, [1, -1]), self.pads, mode='CONSTANT', constant_values=0)
-        phase = tf.math.angle(tf.signal.stft(phase, frame_length=2048, frame_step=2048, pad_end=True))
+        #decay_v = decay_v[:, :, 0, :6]
 
-        decay_v = decay_v[:, :, 0, :6]
-
-        if self.train_phase:
-            return [phase, all_harmonics]
-        elif self.train_b:
+        if self.train_b:
             return [partials_predicted_loss[:, :, :6]]
         elif self.train_amps:
-            return [all_harmonics, rms, alfa, decay_v]
+            return [all_harmonics, rms, alfa]
         elif self.train_S:
             return [all_harmonics]
         else:
-            return [partials_predicted_loss[:, :, :6], phase, all_harmonics, rms, alfa, decay_v]
+            return [partials_predicted_loss[:, :, :6], all_harmonics, rms, alfa]
