@@ -152,14 +152,7 @@ def checkpoints(model_save_dir, save_folder, name):
     return ckpt_callback, ckpt_callback_latest, ckpt_dir, ckpt_dir_latest
 
 
-def render_results(preds, rms_v, N_v, model_save_dir, save_folder):
-
-    len = N_v.shape[0]//16
-    #len = 1350
-    for i in range(0, 16, 1):
-    
-        predictions = np.array(preds[i*len: (i + 1)*len].reshape(-1), dtype=np.float32)
-        N = N_v[i*len: (i + 1)*len].reshape(-1)
-        N = np.array(N, dtype=np.float32)
-        #plotResult_(predictions, N, model_save_dir, save_folder, 'N' + str(i))
-        predictWaves(predictions, N, model_save_dir, save_folder, 24000, 'N' + str(i))
+def render_results(preds, N, model_save_dir, save_folder):
+    predictions = np.array(preds.reshape(-1), dtype=np.float32)
+    N = np.array(N, dtype=np.float32)
+    predictWaves(predictions, N, model_save_dir, save_folder, 24000, 'N')
