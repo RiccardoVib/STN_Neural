@@ -12,21 +12,11 @@ import matplotlib.pyplot as plt
 class DataGeneratorPickles(Sequence):
 
     def __init__(self, filename, data_dir, set, steps, model, batch_size=2800, minibatch_size=2400, stage='', type=np.float64):
-        """
-        Initializes a data generator object
-          :param data_dir: the directory in which data are stored
-          :param output_size: output size
-          :param batch_size: The size of each batch returned by __getitem__
-        """
+      
         data = open(os.path.normpath('/'.join([data_dir, filename + '.pickle'])), 'rb')
         Z = pickle.load(data)
-        y, keys, velocities, partials, f0, B, amps = Z[set]
-        #if set == 'train':
-        #    y_v, _, velocities_v, _, _, _, amps_v = Z['val']
-        #    y = np.concatenate([y, y_v], axis=0)
-        #    velocities = np.concatenate([velocities, velocities_v], axis=0)
-        #    amps = np.concatenate([amps, amps_v[np.newaxis]], axis=0)
-
+        y, keys, velocities, partials, f0, B, _ = Z[set]
+ 
         ### add
         S = np.zeros((y.shape[0], y.shape[1]))
         attackTimes = np.zeros((y.shape[0]))
@@ -48,28 +38,6 @@ class DataGeneratorPickles(Sequence):
         w = scipy.signal.windows.tukey(self.batch_size, alpha=0.000005, sym=True).reshape(1,-1)
         self.S = np.array(S[:, :self.batch_size], dtype=type)*w
         self.ratio = self.S.shape[1] // (steps)
-
-        if len(amps.shape) < 3:
-            amps = amps[np.newaxis]
-        self.amps = np.zeros((self.S.shape[0], self.S.shape[1], 6))
-
-
-        amps0 = np.zeros((amps.shape[0], amps.shape[2]))
-        step = (amps[:, 1, :] - amps0) / 32
-        for j in range(32):
-            #print(j)
-            self.amps[:, j, :] = amps0 + amps0 + step * j
-
-        for i in range(1, amps.shape[1]):
-            step = (amps[:, i, :] - amps[:, i-1, :]) / 32
-            for j in range(32):
-                t = 32*i+j
-                #print(t)
-                self.amps[:, t, :] = amps[:, i-1, :] + amps[:, i-1, :]*step*j
-            if t == self.amps.shape[1]-1:
-                break
-
-        self.amps = self.amps.reshape(-1, minibatch_size, self.steps, 6)
 
         ###metadata
         self.f0 = f0.reshape(-1, 1)
@@ -136,15 +104,14 @@ class DataGeneratorPickles(Sequence):
             targets = {
                    'output_1': self.S[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, self.steps),
                    'output_2': self.rms[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 1),
-                   'output_3': self.alfas[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 1),
-                   'output_4': self.amps[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 6)
+                   'output_3': self.alfas[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 1)
                    }
         else:
             targets = {'output_1': self.partials[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 6),
                    'output_2': self.phase,
                    'output_3': self.S[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, self.steps),
                    'output_4': self.rms[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 1),
-                   'output_5': self.alfas[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 1),
-                   'output_6': self.amps[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 6)}
+                   'output_5': self.alfas[indices].reshape(self.batch_size//self.minibatch_size, self.minibatch_size, 1)
+                      }
 
         return (inputs, (targets))
