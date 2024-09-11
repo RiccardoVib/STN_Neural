@@ -46,7 +46,6 @@ def train(data_dir, **kwargs):
         train_B = True
         train_amps = False
         train_S = False
-        train_phase = False
 
         opt = tf.keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=1)
 
@@ -58,61 +57,25 @@ def train(data_dir, **kwargs):
         lossWeights = {lossesName[0]: w[0]
                     }
 
-    elif phase == 'P':
-        w = [1., 0.]
-        train_B = False
-        train_amps = False
-        train_S = False
-        train_phase = True
-        opt = tf.keras.optimizers.Adam(learning_rate=MyLRScheduler(learning_rate, training_steps))
-
-        lossesName = ['output_1', 'output_2']
-        losses = {
-            lossesName[0]: 'mae',#phase_loss(m=[32, 64, 128, 256], fft_size=fft_size, num_samples=num_samples),  # P
-            lossesName[1]: 'mae',#phase_loss(m=[32, 64, 128, 256], fft_size=fft_size, num_samples=num_samples),  # P
-        }
-
-        lossWeights = {lossesName[0]: w[0]}
-
     elif phase == 'A':
-        w = [0.5, 0., 1., 1.]
+        w = [0.5, 0., 1.]
         train_B = False
         train_amps = True
         train_S = False
-        train_phase = False
-        #opt = tf.keras.optimizers.Adam(learning_rate=MyLRScheduler(learning_rate, training_steps), clipnorm=1)
         opt = tf.keras.optimizers.Adam(learning_rate=MyLRScheduler(learning_rate, training_steps))
 
-        lossesName = ['output_1', 'output_2', 'output_3', 'output_4']
+        lossesName = ['output_1', 'output_2', 'output_3']
         losses = {
             lossesName[0]: STFT_loss(m=[256, 512, 1024, 2048, 4096, 8192], fft_size=fft_size, num_samples=num_samples), # S
             lossesName[1]: 'mae',  # rms
             lossesName[2]: 'mae',  # alfa
-            lossesName[3]: 'mae',  # amps
         }
 
         lossWeights = {lossesName[0]: w[0],
                        lossesName[1]: w[1],
                        lossesName[2]: w[2],
-                       lossesName[3]: w[3]
                        }
-    elif phase == 'S':
-        w = [1.]
-        train_B = False
-        train_amps = False
-        train_S = True
-        train_phase = False
-        epochs = 1000
-        # opt = tf.keras.optimizers.Adam(learning_rate=MyLRScheduler(learning_rate, training_steps), clipnorm=1)
-        opt = tf.keras.optimizers.Adam(learning_rate=MyLRScheduler(learning_rate, training_steps))
 
-        lossesName = ['output_1']
-        losses = {
-            lossesName[0]:  STFT_loss(m=[256, 512, 1024, 2048, 4096, 8192], fft_size=fft_size, num_samples=num_samples), # S
-        }
-
-        lossWeights = {lossesName[0]: w[0]
-                       }
 
     test_gen = DataGeneratorPickles(filename, data_dir, set='val', steps=num_steps, model=None,
                                     batch_size=batch_size,
@@ -127,7 +90,6 @@ def train(data_dir, **kwargs):
                        harmonics=harmonics,
                        max_steps=(test_gen.ratio - 1),
                        train_b=train_B,
-                       train_phase=train_phase,
                        train_amps=train_amps,
                        train_S=train_S,
                        type=tf.float32)
@@ -189,7 +151,7 @@ def train(data_dir, **kwargs):
             loss_training[i] = (results.history['loss'])[-1]
             loss_val[i] = (results.history['val_loss'])[-1]
             
-            print('b: ', model.DecayModel.b)
+            #print('b: ', model.DecayModel.b)
             #print('alfas: ', model.DecayModel.alfas)
 
             if results.history['val_loss'][-1] < best_loss:
@@ -226,27 +188,7 @@ def train(data_dir, **kwargs):
         #model.reset_states()
         #pred = model.predict(train_gen, verbose=0)
         #render_results_train(pred, train_gen.S, model_save_dir, save_folder)
-    elif phase == 'P':
-        render_results(pred[1], test_gen.S, model_save_dir, save_folder, phan)
-
-        with open(os.path.normpath('/'.join([model_save_dir, save_folder, 'P_results.txt'])), 'w') as f:
-            for key, value in results.items():
-                print('\n', key, '  : ', value, file=f)
-
-        model.reset_states()
-        pred = model.predict(train_gen, verbose=0)
-        render_results_train(pred[1], train_gen.S, model_save_dir, save_folder, phan)
-
-    elif phase == 'S':
-        render_results(pred, test_gen.S, model_save_dir, save_folder, phan)
-
-        with open(os.path.normpath('/'.join([model_save_dir, save_folder, 'S_results.txt'])), 'w') as f:
-            for key, value in results.items():
-                print('\n', key, '  : ', value, file=f)
-
-        model.reset_states()
-        pred = model.predict(train_gen, verbose=0)
-        render_results_train(pred, train_gen.S, model_save_dir, save_folder,phan)
+  
     else:
         render_results(pred[0], test_gen.S, model_save_dir, save_folder, phan)
 
