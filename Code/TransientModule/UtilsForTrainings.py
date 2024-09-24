@@ -3,10 +3,8 @@ import os
 import scipy
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import pickle
 from librosa import display
 from scipy.io import wavfile
-import librosa.display
 from scipy import fft, signal
 from tensorflow.keras import backend as K
 
@@ -63,37 +61,58 @@ class STFT_loss(tf.keras.losses.Loss):
 
 
 class MyLRScheduler(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, initial_learning_rate, training_steps, epochs, order):
-        self.initial_learning_rate = (initial_learning_rate)
-        self.steps = training_steps  # *epochs
-        self.order = order
+    """
+    Define the learning schedule
+      :param initial_learning_rate: the initial learning rate [float]
+      :param training_steps: the number of total training steps (iterations) [int]
+    """
+    def __init__(self, initial_learning_rate, training_steps):
+        self.initial_learning_rate = initial_learning_rate
+        self.steps = training_steps * 30
 
     def __call__(self, step):
-        # return tf.cast(self.initial_learning_rate / ( tf.cast(step/self.steps, dtype=tf.float32) + 1.)**self.order, dtype=tf.float32)
-        lr = tf.cast(self.initial_learning_rate * (0.75 ** (tf.cast(step / self.steps, dtype=tf.float32))),
+        lr = tf.cast(self.initial_learning_rate * (0.25 ** (tf.cast(step / self.steps, dtype=tf.float32))),
                      dtype=tf.float32)
-        return tf.math.minimum(lr, 1e-7)
+        return lr#tf.math.maximum(lr, 1e-6)
 
 
-def writeResults(results, b_size, learning_rate, model_save_dir, save_folder,
+def writeResults(results, epochs, b_size, learning_rate, model_save_dir,
+                 save_folder,
                  index):
+    """
+    write to a text the result and parameters of the training
+      :param results: the results from the fit function [dictionary]
+      :param epochs: the number of epochs [int]
+      :param b_size: the batch size [int]
+      :param model_save_dir: the director where the models are saved [string]
+      :param save_folder: the director where the model is saved [string]
+      :param index: index for naming the file [string]
+
+    """
     results = {
         'Min_val_loss': np.min(results.history['val_loss']),
         'Min_train_loss': np.min(results.history['loss']),
         'b_size': b_size,
         'learning_rate': learning_rate,
         # 'Train_loss': results.history['loss'],
-        'Val_loss': results.history['val_loss']
+        'Val_loss': results.history['val_loss'],
+        'epochs': epochs
     }
     with open(os.path.normpath('/'.join([model_save_dir, save_folder, 'results_' + str(index) + '.txt'])), 'w') as f:
         for key, value in results.items():
             print('\n', key, '  : ', value, file=f)
-        pickle.dump(results,
-                    open(os.path.normpath('/'.join([model_save_dir, save_folder, 'results_' + str(index) + '.pkl'])),
-                         'wb'))
 
 
 def plotResult(preds, tars, ref, model_save_dir, save_folder, title):
+    """
+    Plot the rendered results
+      :param pred: the model's prediction  [array of floats]
+      :param tar: the target [array of floats]
+      :param model_save_dir: the director where the models are saved [string]
+      :param save_folder: the director where the model is saved [string]
+      :param title: the name of the file [string]
+      """
+
     fs = 24000
     N_fft = fs * 2
     for i in range(tars.shape[0]):
@@ -145,19 +164,37 @@ def plotResult(preds, tars, ref, model_save_dir, save_folder, title):
         plt.close('all')
 
 
-def plotTraining(loss_training, loss_val, model_save_dir, save_folder):
+def plotTraining(loss_training, loss_val, model_save_dir, save_folder, name):
+    """
+    Plot the training against the validation losses
+      :param loss_training: vector with training losses [array of floats]
+      :param loss_val: vector with validation losses [array of floats]
+      :param model_save_dir: the director where the models are saved [string]
+      :param save_folder: the director where the model is saved [string]
+      :param fs: the sampling rate [int]
+      :param filename: the name of the file [string]
+    """
     fig, ax = plt.subplots(nrows=1, ncols=1)
     ax.plot(np.array(loss_training), label='train'),
     ax.plot(np.array(loss_val), label='validation')
-    plt.ylabel('mse')
+    plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.title('train vs. validation accuracy')
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=False, ncol=2)
-    fig.savefig(model_save_dir + '/' + save_folder + '/loss.png')
+    plt.legend(loc='upper center')  # , bbox_to_anchor=(0.5, -0.15), fancybox=True, shadow=False, ncol=2)
+    fig.savefig(model_save_dir + '/' + save_folder + '/' + name + 'loss.png')
     plt.close('all')
 
-
 def predictWaves(predictions, y_tests, ref_v, model_save_dir, save_folder, fs):
+    """
+    Render the prediction, target as wav audio file
+      :param predictions: the model's prediction  [array of floats]
+      :param y_test: the target [array of floats]
+      :param model_save_dir: the director where the models are saved [string]
+      :param save_folder: the director where the model is saved [string]
+      :param fs: the sampling rate [int]
+      :param title: the name of the file [string]
+    """
+
     for i in range(y_tests.shape[0]):
 
         tar = y_tests[i]
@@ -199,6 +236,14 @@ def predictWaves(predictions, y_tests, ref_v, model_save_dir, save_folder, fs):
 
 
 def plotResult_(pred, tar, model_save_dir, save_folder, title):
+    """
+    plot the prediction and target
+      :param pred: the model's prediction  [array of floats]
+      :param tar: the target [array of floats]
+      :param model_save_dir: the director where the models are saved [string]
+      :param save_folder: the director where the model is saved [string]
+      :param title: the name of the file [string]
+    """
     fig, ax = plt.subplots(nrows=1, ncols=1)
     ax.plot(tar, label='tar')
     ax.plot(pred, label='pred')
@@ -207,23 +252,27 @@ def plotResult_(pred, tar, model_save_dir, save_folder, title):
     plt.close('all')
 
 
-def checkpoints(model_save_dir, save_folder, name):
-    ckpt_path = os.path.normpath(os.path.join(model_save_dir, save_folder, name, 'Checkpoints', 'best', 'best.ckpt'))
-    ckpt_path_latest = os.path.normpath(
-        os.path.join(model_save_dir, save_folder, name, 'Checkpoints', 'latest', 'latest.ckpt'))
-    ckpt_dir = os.path.normpath(os.path.join(model_save_dir, save_folder, name, 'Checkpoints', 'best'))
-    ckpt_dir_latest = os.path.normpath(os.path.join(model_save_dir, save_folder, name, 'Checkpoints', 'latest'))
+def checkpoints(model_save_dir, save_folder):
+    """
+    Define the path to the checkpoints saving the last and best epoch's weights
+      :param model_save_dir: the director where the models are saved [string]
+      :param save_folder: the director where the model is saved [string]
+    """
+    ckpt_path = os.path.normpath(
+        os.path.join(model_save_dir, save_folder, 'Checkpoints', 'best', 'best.ckpt'))
+    ckpt_path_latest = os.path.normpath(os.path.join(model_save_dir, save_folder, 'Checkpoints', 'latest', 'latest.ckpt'))
+    ckpt_dir = os.path.normpath(os.path.join(model_save_dir, save_folder, 'Checkpoints', 'best'))
+    ckpt_dir_latest = os.path.normpath(os.path.join(model_save_dir, save_folder, 'Checkpoints', 'latest'))
 
     if not os.path.exists(os.path.dirname(ckpt_dir)):
         os.makedirs(os.path.dirname(ckpt_dir))
     if not os.path.exists(os.path.dirname(ckpt_dir_latest)):
-        os.makedirs(os.path.dirname(ckpt_dir_latest))
+       os.makedirs(os.path.dirname(ckpt_dir_latest))
 
     ckpt_callback = tf.keras.callbacks.ModelCheckpoint(filepath=ckpt_path, monitor='val_loss', mode='min',
-                                                       save_best_only=True, save_weights_only=True, verbose=1)
-    ckpt_callback_latest = tf.keras.callbacks.ModelCheckpoint(filepath=ckpt_path_latest, monitor='val_loss',
-                                                              mode='min',
-                                                              save_best_only=False, save_weights_only=True,
-                                                              verbose=1)
+                                                       save_best_only=True, save_weights_only=True, verbose=1,
+                                                       save_best_value=True)
+
+    ckpt_callback_latest = tf.keras.callbacks.ModelCheckpoint(filepath=ckpt_path_latest, monitor='val_loss', mode='min', save_best_only=False, save_weights_only=True, verbose=1)
 
     return ckpt_callback, ckpt_callback_latest, ckpt_dir, ckpt_dir_latest

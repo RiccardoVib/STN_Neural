@@ -1,15 +1,19 @@
 from TrainingNoiseModel import train
 
-DATA_DIR = '../../Files/PianoSingleNoteDataGrand' #### Dataset folder
-DATA_DIR = '../../Files/PianoSingleNoteData' #### Dataset folder
-MODEL_SAVE_DIR = '../../TrainedModels'  #### Models folder
-_NAME = 'Noise_' #### Model name
 
-###next ir_size
+"""
+main script
+
+"""
+# data_dir: the directory in which datasets are stored
+DATA_DIR = ''
+MODEL_SAVE_DIR = ''  # Models folder
+_NAME = 'Noise_'
+batch_size = 1 # batch size
 INFERENCE = False
-STEPS = 1024#24000#15
-LR = 3e-4
-batch_size=1#262144//1024#1
+STEPS = 1024 # input/output size
+LR = 3e-4  # initial learning rate
+
 keys = ['C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3', 'G#3', 'A3', 'A#3', 'B3', 'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4']
 keys = ['F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4']
 keys = ['C4']

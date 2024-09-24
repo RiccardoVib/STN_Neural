@@ -3,11 +3,9 @@ import os
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import pickle
-from librosa import display
 from scipy.io import wavfile
 import librosa.display
 from scipy import fft, signal
-from Utils import filterAudio
 
 class MyLRScheduler(tf.keras.optimizers.schedules.LearningRateSchedule):
     """
@@ -25,13 +23,12 @@ class MyLRScheduler(tf.keras.optimizers.schedules.LearningRateSchedule):
         return lr#tf.math.maximum(lr, 1e-6)
 
 
-def writeResults(results, units, epochs, b_size, learning_rate, model_save_dir,
+def writeResults(results, epochs, b_size, learning_rate, model_save_dir,
                  save_folder,
                  index):
     """
     write to a text the result and parameters of the training
       :param results: the results from the fit function [dictionary]
-      :param units: the number of model's units [int]
       :param epochs: the number of epochs [int]
       :param b_size: the batch size [int]
       :param model_save_dir: the director where the models are saved [string]
@@ -46,7 +43,6 @@ def writeResults(results, units, epochs, b_size, learning_rate, model_save_dir,
         'learning_rate': learning_rate,
         # 'Train_loss': results.history['loss'],
         'Val_loss': results.history['val_loss'],
-        'units': units,
         'epochs': epochs
     }
     with open(os.path.normpath('/'.join([model_save_dir, save_folder, 'results_' + str(index) + '.txt'])), 'w') as f:

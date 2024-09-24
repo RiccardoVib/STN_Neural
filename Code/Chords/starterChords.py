@@ -1,16 +1,23 @@
 from Training import trainH
 
-DATA_DIR = '../../Files/PianoChordNoteData' #### Dataset folder
-MODEL_SAVE_DIR = '../../TrainedModels' #### Models folder
+"""
+main script
 
-INFERENCE = False
-LR = 3e-4
-STEPS = 1
-batch_size = 24000
+"""
 
-#b_size
-MODEL_NAME = 'Chord_finals' #### Model name
+# data_dir: the directory in which datasets are stored
+DATA_DIR = ''
 EPOCHS = 1000
+STEPS = 1 # input/output size
+batch_size = 24000 # batch size
+LR = 3e-4 # initial learning rate
+INFERENCE = False
+MODEL_SAVE_DIR = '' # Models folder
+
+
+MODEL_NAME = 'Chord_finals' #### Model name
+
+
 trainH(data_dir=DATA_DIR,
       save_folder=MODEL_NAME,
       model_save_dir=MODEL_SAVE_DIR,

@@ -1,16 +1,21 @@
 from TrainingAllModel import train
 
-DATA_DIR = '../../Files/PianoSingleNoteData/'  #### Dataset folder
-#DATA_DIR = '../../Files/PianoSingleNoteDataGrand/'
-MODEL_SAVE_DIR = '../../TrainedModels'  #### Models folder
+
+"""
+main script
+
+"""
+# data_dir: the directory in which datasets are stored
+DATA_DIR = ''
+MODEL_SAVE_DIR = '../../TrainedModels'  # Models folder
 INFERENCE = False
-HARMONICS = 24
-STEPS = 1
-LR = 3e-4
-g = 9
-phan = False
-A = True
-B = True
+HARMONICS = 24 # number of partials to generate
+STEPS = 1 # output size
+LR = 3e-4 # initial leanring rate
+g = 9 # starting mode for compute the longitudinal displacements
+phan = False # if include phantom partials
+A = True # phase training decay rates
+B = True # phase training inharmonic factor
     
 if INFERENCE:
     B = False
@@ -18,14 +23,14 @@ if INFERENCE:
 keys = ['C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3', 'G#3', 'A3', 'A#3', 'B3', 'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4']
 
 batch_size = 2**17
-minibatch_size = 1
+
 
 for key in keys:
 
     filename = 'DatasetSingleNote_split_' + key
-    #filename = 'DatasetSingleNoteGrand_split_' + key
 
-    MODEL_NAME = filename + '_' + str(STEPS) + '_' + str(HARMONICS) + ''#### Model name
+
+    MODEL_NAME = filename + '_' + str(STEPS) + '_' + str(HARMONICS) + '' # Model name
 
         
     if A == True:
@@ -41,7 +46,6 @@ for key in keys:
               epochs=10000,
               batch_size=batch_size,
               num_steps=STEPS,
-              minibatch_size=minibatch_size,
               harmonics=HARMONICS,
               phase=PHASE,
               inference=INFERENCE)
@@ -62,7 +66,6 @@ for key in keys:
               batch_size=batch_size,
               num_steps=STEPS,
               harmonics=HARMONICS,
-              minibatch_size=minibatch_size,
               phase=PHASE,
               inference=INFERENCE)
 
@@ -83,7 +86,6 @@ for key in keys:
               epochs=10000,
               batch_size=batch_size,
               num_steps=STEPS,
-              minibatch_size=minibatch_size,
               harmonics=HARMONICS,
               phase=PHASE,
               inference=INFERENCE)
