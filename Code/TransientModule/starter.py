@@ -1,5 +1,17 @@
 from TrainingTransientModel import train
 
+"""
+main script
+
+"""
+
+# data_dir: the directory in which datasets are stored
+data_dir = '../../Files/'
+epochs = 200
+units = 6 # number of model's units
+batch_size = 600*4 # batch size
+lr = 3e-4 # initial learning rate
+
 DATA_DIR = '../../Files/PianoSingleNoteDataGrand' #### Dataset folder
 #DATA_DIR = '../../Files/PianoSingleNoteData' #### Dataset folder
 MODEL_SAVE_DIR = '../../TrainedModels' #### Models folder

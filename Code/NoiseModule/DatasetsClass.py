@@ -13,19 +13,20 @@ class DataGeneratorPickles(Sequence):
     def __init__(self, filename, data_dir, set, steps, model, batch_size=2800, type=np.float64):
         """
         Initializes a data generator object
-          :param data_dir: the directory in which data are stored
-          :param output_size: output size
-          :param batch_size: The size of each batch returned by __getitem__
+        :param filename: name of the file to load
+        :param data_dir: the directory in which data are stored
+        :param set: train or validation set [string]
+        :param steps: number of timesteps generated per iteration [int]
+        :param model: the model object [model class]
+        :param batch_size: The size of each batch returned by __getitem__ [int]
         """
+
+        # load the data
         data = open(os.path.normpath('/'.join([data_dir, filename + '.pickle'])), 'rb')
         Z = pickle.load(data)
         y, keys, velocities, _, _, _, _ = Z[set]
-        #if set == 'train':
-        #    y_v, _, velocities_v, _, _, _, _ = Z['val']
-        #    y = np.concatenate([y, y_v], axis=0)
-        #    velocities = np.concatenate([velocities, velocities_v], axis=0)
 
-        ### add
+        # compute harmonic component
         N = np.zeros((y.shape[0], y.shape[1]))
         for i in range(y.shape[0]):
             D = librosa.stft(y[i])
@@ -41,7 +42,6 @@ class DataGeneratorPickles(Sequence):
         self.steps = steps
         self.noise = np.array(N, dtype=type)
         self.noise = self.noise[:, :]/np.max(self.noise)
-        #self.noise = self.noise[:, self.noise.shape[1]//2:]/np.max(self.noise)
         self.ratio = self.noise.shape[1] // (steps)
 
         lim = self.noise.shape[1]//self.steps*self.steps
@@ -53,12 +53,12 @@ class DataGeneratorPickles(Sequence):
 
         #########
 
-        # waveforms
+        # indices
         self.k = np.arange(0, self.ratio).reshape(-1, 1)
         self.k = np.array(self.k, dtype=np.float32)
         self.k = np.repeat(self.k.T, self.n_note, axis=0).reshape(-1, 1)
 
-        #self.y = self.y.reshape(-1, steps)
+        # waveforms
         self.N = self.noise.reshape(-1, steps)
 
         self.rms = np.abs(tf.reduce_mean(np.square(self.N), axis=-1)).reshape(-1, 1)
@@ -71,9 +71,11 @@ class DataGeneratorPickles(Sequence):
         self.on_epoch_end()
 
     def on_epoch_end(self):
+        # create/reset the vector containing the indices of the batches
         self.indices = np.arange(self.velocities.shape[0])
 
     def __len__(self):
+        # compute the needed number of iterations before conclude one epoch
         return int(self.velocities.shape[0]/self.batch_size)
 
     def __call__(self):
@@ -83,9 +85,10 @@ class DataGeneratorPickles(Sequence):
                 self.on_epoch_end()
 
     def __getitem__(self, idx):
-
+        # get the indices of the requested batch
         indices = self.indices[idx * self.batch_size:(idx + 1) * self.batch_size]
 
+        #reset the states if velocity changes
         if self.prev_v != self.velocities[indices[0], 0]:
             self.model.reset_states()
 

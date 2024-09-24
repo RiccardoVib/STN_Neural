@@ -142,6 +142,12 @@ def frequency_impulse_response(magnitudes, window_size):
 
 class NoiseGenerator(tf.keras.layers.Layer):
     def __init__(self, window_size, ir_size, trainable=False, max_steps=2799.0, type=tf.float32):#ir_size => window_size
+        """
+        Noise generator object
+            :param window_size: input size
+            :param ir_size: size of the impuslse response to compute
+            :param trainable: if train the layers
+        """
         super(NoiseGenerator, self).__init__()
 
         # Amplitude envelope as complex OLA
@@ -159,19 +165,18 @@ class NoiseGenerator(tf.keras.layers.Layer):
 
     def __call__(self, vel_inputs, K):
 
-        #f_n = tf.divide(freq_inputs, self.max_)
         K = tf.divide(K, self.max_steps)
         all_inp = tf.keras.layers.Concatenate(axis=-1)([vel_inputs, K])
 
         noise_bands = self.coeff(all_inp)###fft_length = 2 * (inner - 1) se noise_bands=128 -> impulse 127*2
-        #noise_bands = tf.abs(noise_bands)
-        
+
         amps = self.amps(all_inp)
         mean = self.mean(all_inp)
     
         # Create a sequence of IRs according to input.
         impulse = frequency_impulse_response(noise_bands, self.ir_size) #self.ir_size <= (noise_bands-1)*2 = (self.window_size-1)*2
 
+        # compute noise and filter it via convolution
         noise = tf.random.normal([impulse.shape[0],  self.window_size], mean=mean, stddev=1.0, seed=422, dtype=self.type, name='noise')###mean
         noise = noise/tf.math.reduce_max(noise)
 

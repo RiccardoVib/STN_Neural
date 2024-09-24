@@ -5,6 +5,14 @@ import numpy as np
 
 class InharmonicLayer(tf.keras.layers.Layer):
     def __init__(self, harmonics=32, batch_size=1, num_frames=1, Fs=24000, trainable=True, type=tf.float32):
+        """
+        Inharmonic layer
+            :param harmonics: number of harmonics to compute
+            :param batch_size: bacth size
+            :param num_frames: number of frames per batch
+            :param Fs: sampling rate
+            :param trainable: if train the layers
+        """
         super(InharmonicLayer, self).__init__()
         self.type = type
         self.twopi = tf.constant(2 * m.pi, dtype=self.type)
@@ -16,24 +24,20 @@ class InharmonicLayer(tf.keras.layers.Layer):
         self.n = tf.repeat(self.n, self.batch_size, axis=0)
         self.n = tf.cast(self.n, dtype=self.type)
         self.ones = tf.ones((self.batch_size, harmonics))
-
-        # self.linear = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(8, name='B', trainable=self.trainable, dtype=self.type))
-        # self.linearOut = tf.keras.layers.Dense(1, activation='sigmoid', name='Bout', trainable=self.trainable, dtype=self.type)
-
         self.correction = tf.Variable(tf.zeros((1, 1, 1)), trainable=trainable)
 
     def __call__(self, freq_inputs, B_inputs):
-        # f_n = tf.divide(freq_inputs, self.max_)  # BxD
-        # B = self.linear(f_n)  # BxU
-        # B = self.linearOut(B)  # Bx1
+        """
+        out:
+        partials: partials distribution
+        final_n: the vector needed to compute the partials distribution
+        """
 
-        B = tf.reshape(B_inputs, [self.batch_size, 1, 1])
-        #####law3
+        B = tf.reshape(B_inputs, [self.batch_size, 1, 1]) # starting from realistic value
         n2 = tf.pow(self.n, 2)  # BxH
-
         corr = self.correction
 
-        corr = tf.clip_by_value(corr, 0., 10.)
+        corr = tf.clip_by_value(corr, 0., 10.) # clip if too big
         corr = tf.repeat(corr, self.batch_size, axis=0)
         Bn = tf.keras.layers.Multiply()([corr, B])
         Bn = tf.keras.layers.Multiply()([n2, Bn])  # BxH
@@ -48,6 +52,13 @@ class InharmonicLayer(tf.keras.layers.Layer):
 
 class DeltaLayer(tf.keras.layers.Layer):
     def __init__(self, batch_size=1, Fs=24000, trainable=True, num_frames=2400, type=tf.float32):
+        """
+        Detuning layer
+            :param batch_size: bacth size
+            :param num_frames: number of frames per batch
+            :param Fs: sampling rate
+            :param trainable: if train the layers
+        """
         super(DeltaLayer, self).__init__()
         self.type = type
         self.num_frames = num_frames
@@ -70,8 +81,10 @@ class DeltaLayer(tf.keras.layers.Layer):
                                                   dtype=self.type)
 
     def __call__(self, vel_inputs):
-        # all_inp = tf.keras.layers.Concatenate(axis=-1)([f_n, vel_inputs])  # Bx2
-
+        """
+        out:
+        t2: detuning value
+        """
         t2 = self.linear_t2(vel_inputs)
         t2 = self.linear_t2_1(t2)
         t2 = self.t2Norm(t2)
@@ -83,11 +96,12 @@ class DeltaLayer(tf.keras.layers.Layer):
 class SinuosoidsGenerator(tf.keras.layers.Layer):
     def __init__(self, batch_size, harmonics=24, num_steps=24, num_frames=2400, Fs=24000, type=tf.float32):
         """
-        Time Varying feedforward delay line
-
-        Args:
-            max_delay (int, optional): Maximum length of delay line in samples. Defaults to 40000.
-            channels (int, optional): Number of channels or audio. Defaults to 1.
+        Sinuosoids Generator
+            :param harmonics: number of harmonics to compute
+            :param batch_size: bacth size
+            :param num_frames: number of frames per batch
+            :param Fs: sampling rate
+            :param num_steps: number of timesteps to compute per iteration
         """
         super(SinuosoidsGenerator, self).__init__()
         self.type = type
@@ -99,7 +113,12 @@ class SinuosoidsGenerator(tf.keras.layers.Layer):
         self.num_frames = num_frames
 
     def __call__(self, freqs_inputs, index_inputs):
-        ##### partials
+        """
+        out:
+        partials: the set of sine waves representing the partials,
+        f: the related frequency bins
+        t: the related time axis
+        """
         f = tf.divide(freqs_inputs, self.Fs, name='divide')  # BxH
         x = tf.multiply(self.twopi, f, name='mul')  # BxH
         t = tf.ones((self.batch_size // self.num_frames, self.num_frames, self.num_steps, self.harmonics))  # BxTxH
@@ -121,11 +140,13 @@ class DecayLayer(tf.keras.layers.Layer):
     def __init__(self, batch_size, harmonics=24, Fs=24000, trainable=True, num_frames=2400, g=0, phan=False,
                  type=tf.float32):
         """
-        Time Varying feedforward delay line
-
-        Args:
-            max_delay (int, optional): Maximum length of delay line in samples. Defaults to 40000.
-            channels (int, optional): Number of channels or audio. Defaults to 1.
+        Decay Layer
+            :param harmonics: number of harmonics to compute
+            :param batch_size: bacth size
+            :param num_frames: number of frames per batch
+            :param Fs: sampling rate
+            :param g: starting mode for compute the longitudinal displacements
+            :param phan: if include phantom partials
         """
         super(DecayLayer, self).__init__()
         self.batch_size = batch_size
@@ -150,20 +171,15 @@ class DecayLayer(tf.keras.layers.Layer):
         self.alfaDenseGelu = tf.keras.layers.Dense(self.units // 2, activation='gelu', name='alfa3',
                                                    trainable=self.trainable, dtype=self.type)  ##
         self.alfaOut = tf.keras.layers.Dense(self.units, name='alfaOut', trainable=self.trainable, dtype=self.type)
-        # self.alfaNorm = tf.keras.layers.BatchNormalization(trainable=self.trainable)
         self.alfaNorm = tf.keras.layers.BatchNormalization()
-
-        # self.alfaNormPre = tf.keras.layers.BatchNormalization(trainable=self.trainable)
         self.alfaNormPre = tf.keras.layers.BatchNormalization()
 
         self.Att = tf.keras.layers.MultiHeadAttention(1, 8)  # , attention_axes=[2])
 
         self.b = tf.Variable(tf.random.normal([4]), trainable=self.trainable)
-
-        # self.alfas = tf.Variable(tf.zeros([self.units]), trainable=False)
         self.perm = tf.keras.layers.Permute((2, 1))
 
-    def compute_decay_rate(self, b0, b1, b2, b3, t_s):
+    def compute_decay_rate(self, b0, b1, b2, b3, t_s): # compute the decay rate given the b coeficients
         decay_rate = tf.add(b0, b1)
         decay_rate = tf.add(decay_rate, b2)
         decay_rate = tf.add(decay_rate, b3)
@@ -172,13 +188,13 @@ class DecayLayer(tf.keras.layers.Layer):
         decay_rate = tf.multiply(decay_rate, t_s)
         return decay_rate
 
-    def compute_free_long(self, alfas):
+    def compute_free_long(self, alfas): # compute the even longitudinal waves
 
         alfa_even = tf.pow(alfas[0][:, :, :, self.g:], 2.)
         alfa_even2 = tf.pow(alfas[1][:, :, :, self.g:], 2.)
         return [alfa_even, alfa_even2]
 
-    def compute_phantoms(self, alfas):
+    def compute_phantoms(self, alfas): # compute the odd longitudinal waves
         alfa_odd = []
         alfa_odd2 = []
         alfa_odd3 = []
@@ -199,14 +215,17 @@ class DecayLayer(tf.keras.layers.Layer):
         return [alfa_odd, alfa_odd2, alfa_odd3]
 
     def __call__(self, vel_inputs, f, t, K, partials, t_even, t_odd, attackTime):
-        # all_inp = tf.keras.layers.Concatenate(axis=-1)([f_n, vel_inputs])  # BxDx2
-
+        """
+        out:
+        decay_v: decay values for the vertical displacements
+        decay_h: decay values for the horizontal displacements
+        attackTime_t: attack time
+        phantom_decays: decay values for the longitudinal displacements
+        """
         attackTime_t = tf.multiply(attackTime, t[:, :, :, 0])  # BxTx1
-        attackTime_t = tf.math.minimum(attackTime_t, 1.)
+        attackTime_t = tf.math.minimum(attackTime_t, 1.) # not used, for debug
 
         b_v = tf.abs(tf.nn.gelu(self.b))
-        # b_v = tf.abs(self.b)
-        # b_v = tf.multiply(b_v, [1., 1., 500., 1.])
 
         all_inp = tf.keras.layers.Concatenate(axis=-1)([vel_inputs, K])  # Bx3
         alfa_v = self.alfaIn(all_inp)  # Bx1xH
@@ -224,10 +243,6 @@ class DecayLayer(tf.keras.layers.Layer):
         alfa_v = tf.abs(alfa_v)
 
         alfa_v = tf.clip_by_value(alfa_v, 0., 1.)
-        # b_v = tf.clip_by_value(b_v, 0.0000001, 1.)
-
-        # alfa_v = tf.multiply(alfa_v, attackTime_t)
-        # self.alfas.assign(alfa_v[0, 0, :])
 
         alfa_v, alfa_h = tf.split(alfa_v, [self.harmonics, self.harmonics], axis=-1)
 

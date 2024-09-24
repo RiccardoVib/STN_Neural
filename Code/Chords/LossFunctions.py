@@ -2,6 +2,8 @@ import tensorflow as tf
 from tensorflow.keras import backend as K
 
 class STFT_loss(tf.keras.losses.Loss):
+    """ multi-STFT error """
+
     def __init__(self, m=[32, 64, 128, 256, 512, 1024], name="STFT", **kwargs):
         super().__init__(name=name, **kwargs)
         self.m = m

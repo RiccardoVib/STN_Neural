@@ -3,11 +3,17 @@ from Layers import TemporalFiLM
 
 
 class EnhancementLayer(tf.keras.layers.Layer):
-    def __init__(self, b_size, steps, bias=True, dim=-1, trainable=True, type=tf.float32):
+    def __init__(self, b_size, steps, bias=True, trainable=True, type=tf.float32):
+        """
+        Enhancement Layer
+        :param b_size: batch size
+        :param steps: input size
+        :param bias: if use bias
+        :param trainable: if train the layers
+        """
         super(EnhancementLayer, self).__init__()
         self.bias = bias
         self.steps = steps
-        self.dim = dim
         self.trainable = trainable
         self.type = type
         self.b_size = b_size
@@ -32,6 +38,13 @@ class EnhancementLayer(tf.keras.layers.Layer):
 
 class HarmonicEnhancementModel(tf.keras.Model):
     def __init__(self, b_size, steps, trainable=True, type=tf.float32):
+        """
+        Harmonic Enhancement Model
+        :param b_size: batch size
+        :param steps: input size
+        :param trainable: if train the layers
+        """
+
         super(HarmonicEnhancementModel, self).__init__()
 
         self.b_size = b_size

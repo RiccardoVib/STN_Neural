@@ -2,12 +2,25 @@ import tensorflow as tf
 from Layers import InharmonicLayer, DecayLayer, SinuosoidsGenerator, DeltaLayer
 import matplotlib.pyplot as plt
 import math as m
-from LayersNoise import NoiseGenerator
 
 
 class PianoModel(tf.keras.Model):
     def __init__(self, batch_size=1, num_steps=240, num_frames=240, harmonics=24, fs=24000, max_steps=2799.0, g=9,
-                 phan=False, train_b=True, train_phase=False, train_amps=False, train_S=False, type=tf.float32):
+                 phan=False, train_b=True, train_amps=False, type=tf.float32):
+        """
+        Piano Model
+        :param batch_size: batch size
+        :param num_steps: input size
+        :param num_frames: number of frames per batch
+        :param harmonics: number of harmonics to compute
+        :param fs: sampling rate
+        :param max_steps: max number of steps to compute a note
+        :param g: starting mode for compute the longitudinal displacements
+        :param phan: if include phantom partials
+        :param train_b: if train the inharmonic layers
+        :param train_amps: if train the decay and detuning layers
+        """
+
         super(PianoModel, self).__init__()
 
         self.twopi = tf.constant(2 * m.pi, dtype=type)
@@ -17,10 +30,11 @@ class PianoModel(tf.keras.Model):
         self.max_steps = max_steps
         self.num_steps = num_steps
         self.num_frames = num_frames
-        self.train_S = train_S
-        self.train_phase = train_phase
+
         self.train_b = train_b
         self.train_amps = train_amps
+
+        # comute how many phantom partials need to be generated
         self.h_even = self.harmonics - self.g
         self.h_odd = self.h_even * 2 - 2
         self.phan = phan
@@ -130,27 +144,13 @@ class PianoModel(tf.keras.Model):
 
             decay_v, decay_h, attackTime_t = self.DecayModel(vel_inputs, [f, f_h], t, index_inputs / self.max_steps,
                                                              f, t, t, attackTime)
-        #####phase
-        # phase = self.phase
-        # phase = self.phaseNorm(phase)
-        # phase = tf.nn.sigmoid(phase)
-        # phase = tf.multiply(phase, self.twopi)
-        # phase = tf.expand_dims(phase, axis=0)
-        # phase = tf.repeat(phase, self.harmonics, axis=1)
-        # phase = tf.expand_dims(phase, axis=0)
-        # phase = tf.expand_dims(phase, axis=0)
-        # phase = tf.repeat(phase, self.batch_size // self.num_frames, axis=0)
-        #
-        # phase_v, phase_h = tf.split(phase, [self.harmonics, self.harmonics], axis=-1)
-        ####
-        #
-        # all_harmonics = tf.sin(partials_xt+phase_v)
+
+
         all_harmonics = tf.sin(partials_xt)
         #decay_v = tf.multiply(decay_v, tf.expand_dims(attackTime_t, axis=-1))
         all_harmonics = tf.multiply(decay_v, all_harmonics)
         all_harmonics = tf.math.reduce_sum(all_harmonics, axis=-1, name='reduce_harmonics')  # sum harmonics
 
-        # all_harmonics_h = tf.sin(partials_xt_h+phase_h)
         all_harmonics_h = tf.sin(partials_xt_h)
         #decay_h = tf.multiply(decay_h, tf.expand_dims(attackTime_t, axis=-1))
         all_harmonics_h = tf.multiply(decay_h, all_harmonics_h)
@@ -198,13 +198,10 @@ class PianoModel(tf.keras.Model):
         alfa = tf.math.reduce_max(tf.abs(all_harmonics), axis=-1, keepdims=True)
         rms = tf.abs(tf.reduce_mean(tf.square(all_harmonics), axis=-1, keepdims=True))
 
-        #decay_v = decay_v[:, :, 0, :6]
 
         if self.train_b:
             return [partials_predicted_loss[:, :, :6]]
         elif self.train_amps:
             return [all_harmonics, rms, alfa]
-        elif self.train_S:
-            return [all_harmonics]
         else:
             return [partials_predicted_loss[:, :, :6], all_harmonics, rms, alfa]

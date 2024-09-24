@@ -179,15 +179,11 @@ def train(data_dir, **kwargs):
     pred = model.predict(test_gen, verbose=0)
 
     if phase == 'B':
-        #render_results(pred, test_gen.S, model_save_dir, save_folder)
 
         with open(os.path.normpath('/'.join([model_save_dir, save_folder, 'B_results.txt'])), 'w') as f:
             for key, value in results.items():
                 print('\n', key, '  : ', value, file=f)
 
-        #model.reset_states()
-        #pred = model.predict(train_gen, verbose=0)
-        #render_results_train(pred, train_gen.S, model_save_dir, save_folder)
   
     else:
         render_results(pred[0], test_gen.S, model_save_dir, save_folder, phan)
@@ -196,8 +192,5 @@ def train(data_dir, **kwargs):
             for key, value in results.items():
                 print('\n', key, '  : ', value, file=f)
 
-        model.reset_states()
-        pred = model.predict(train_gen, verbose=0)
-        render_results_train(pred[0], train_gen.S, model_save_dir, save_folder, phan)
     return 42
 
