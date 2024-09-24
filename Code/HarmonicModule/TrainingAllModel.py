@@ -113,8 +113,6 @@ def train(data_dir, **kwargs):
     print('\n')
     print('batch_size:', batch_size)
     print('\n')
-    print('minibatch_size:', minibatch_size)
-    print('\n')
     print('training_steps:', training_steps)
     print('\n')
     print('g:', g)
