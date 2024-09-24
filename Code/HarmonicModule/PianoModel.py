@@ -5,13 +5,12 @@ import math as m
 
 
 class PianoModel(tf.keras.Model):
-    def __init__(self, batch_size=1, num_steps=240, num_frames=240, harmonics=24, fs=24000, max_steps=2799.0, g=9,
+    def __init__(self, batch_size=1, num_steps=240, harmonics=24, fs=24000, max_steps=2799.0, g=9,
                  phan=False, train_b=True, train_amps=False, type=tf.float32):
         """
         Piano Model
         :param batch_size: batch size
         :param num_steps: input size
-        :param num_frames: number of frames per batch
         :param harmonics: number of harmonics to compute
         :param fs: sampling rate
         :param max_steps: max number of steps to compute a note
@@ -29,7 +28,6 @@ class PianoModel(tf.keras.Model):
         self.harmonics = harmonics
         self.max_steps = max_steps
         self.num_steps = num_steps
-        self.num_frames = num_frames
 
         self.train_b = train_b
         self.train_amps = train_amps
@@ -39,7 +37,7 @@ class PianoModel(tf.keras.Model):
         self.h_odd = self.h_even * 2 - 2
         self.phan = phan
 
-        self.InharmonicModel = InharmonicLayer(harmonics=harmonics, batch_size=self.batch_size, num_frames=num_frames,
+        self.InharmonicModel = InharmonicLayer(harmonics=harmonics, batch_size=self.batch_size,
                                                Fs=fs, trainable=self.train_b, type=type)
         self.SinuosoidsGenerator = SinuosoidsGenerator(batch_size=self.batch_size, harmonics=harmonics,
                                                        num_steps=num_steps, num_frames=self.num_frames, type=type)

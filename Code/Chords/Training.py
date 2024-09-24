@@ -33,9 +33,6 @@ def trainH(data_dir, **kwargs):
     #np.random.seed(422)
     #tf.random.set_seed(422)
     #random.seed(422)
-
-    gpu = tf.config.experimental.list_physical_devices('GPU')[0]
-    tf.config.experimental.set_memory_growth(gpu, True)
     
 
     # check if GPUs are available and set the memory growing
@@ -77,7 +74,7 @@ def trainH(data_dir, **kwargs):
 
     # define callbacks: where to store the weights
     callbacks = []
-    ckpt_callback, ckpt_callback_latest, ckpt_dir, ckpt_dir_latest = checkpoints(model_save_dir, save_folder, '')
+    ckpt_callback, ckpt_callback_latest, ckpt_dir, ckpt_dir_latest = checkpoints(model_save_dir, save_folder)
 
     if not inference:
         callbacks += [ckpt_callback, ckpt_callback_latest]
@@ -131,7 +128,7 @@ def trainH(data_dir, **kwargs):
 
         # write and save results
         writeResults(results, epochs, batch_size, learning_rate, model_save_dir,
-                     save_folder, epochs)
+                     save_folder, 1)
 
         # plot the training and validation loss for all the training
         loss_training = np.array(loss_training[:i])
@@ -165,6 +162,5 @@ def trainH(data_dir, **kwargs):
     with open(os.path.normpath('/'.join([model_save_dir, save_folder, 'results.txt'])), 'w') as f:
         for key, value in results.items():
             print('\n', key, '  : ', value, file=f)
-        pickle.dump(results, open(os.path.normpath('/'.join([model_save_dir, save_folder, 'results.pkl'])), 'wb'))
 
     return 42

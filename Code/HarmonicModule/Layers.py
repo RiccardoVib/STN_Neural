@@ -4,12 +4,11 @@ import numpy as np
 
 
 class InharmonicLayer(tf.keras.layers.Layer):
-    def __init__(self, harmonics=32, batch_size=1, num_frames=1, Fs=24000, trainable=True, type=tf.float32):
+    def __init__(self, harmonics=32, batch_size=1, Fs=24000, trainable=True, type=tf.float32):
         """
         Inharmonic layer
             :param harmonics: number of harmonics to compute
             :param batch_size: bacth size
-            :param num_frames: number of frames per batch
             :param Fs: sampling rate
             :param trainable: if train the layers
         """
@@ -18,7 +17,7 @@ class InharmonicLayer(tf.keras.layers.Layer):
         self.twopi = tf.constant(2 * m.pi, dtype=self.type)
         self.Fs = Fs
         self.batch_size = batch_size
-        self.num_frames = num_frames
+        self.num_frames = 1
         self.trainable = trainable
         self.n = tf.expand_dims(tf.linspace(1, harmonics, harmonics), axis=0)
         self.n = tf.repeat(self.n, self.batch_size, axis=0)
