@@ -67,14 +67,14 @@ class DataGeneratorPickles(Sequence):
         # waveforms
         self.S = self.S.reshape(-1, self.minibatch_size, steps)
 
-        self.rms = np.abs(tf.reduce_mean(np.square(self.S), axis=-1)).reshape(-1, minibatch_size, 1)
-        self.alfas = np.max(np.abs(self.S), axis=-1).reshape(-1, minibatch_size, 1)
+        self.rms = np.abs(tf.reduce_mean(np.square(self.S), axis=-1)).reshape(-1, self.minibatch_size, 1)
+        self.alfas = np.max(np.abs(self.S), axis=-1).reshape(-1, self.minibatch_size, 1)
 
-        self.f0 = np.repeat(self.f0, self.ratio*self.n_note, axis=0).reshape(-1, minibatch_size, 1)
-        self.partials = np.repeat(self.partials, self.ratio*self.n_note, axis=0).reshape(-1, minibatch_size, 6)
-        self.velocities = np.repeat(self.velocities, self.ratio, axis=0).reshape(-1, minibatch_size, 1)
-        self.B = np.repeat(self.B, self.ratio*self.n_note, axis=0).reshape(-1, 1, minibatch_size, 1)
-        self.attackTimes = np.repeat(self.attackTimes, self.ratio, axis=0).reshape(-1, minibatch_size, 1)
+        self.f0 = np.repeat(self.f0, self.ratio*self.n_note, axis=0).reshape(-1, self.minibatch_size, 1)
+        self.partials = np.repeat(self.partials, self.ratio*self.n_note, axis=0).reshape(-1, self.minibatch_size, 6)
+        self.velocities = np.repeat(self.velocities, self.ratio, axis=0).reshape(-1, self.minibatch_size, 1)
+        self.B = np.repeat(self.B, self.ratio*self.n_note, axis=0).reshape(-1, 1, self.minibatch_size, 1)
+        self.attackTimes = np.repeat(self.attackTimes, self.ratio, axis=0).reshape(-1, self.minibatch_size, 1)
 
         self.prev = None
         self.prev_v = None
