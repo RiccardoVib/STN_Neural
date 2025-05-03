@@ -1,6 +1,6 @@
 import tensorflow as tf
 from LayersNoise import NoiseGenerator
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 class NoiseModel(tf.keras.Model):
     def __init__(self, batch_size, num_steps=240, ir_size=2*(240-1), train_n=True, max_steps=2799.0, type=tf.float32):
