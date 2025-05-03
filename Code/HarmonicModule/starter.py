@@ -13,7 +13,7 @@ def parse_args():
 
     parser.add_argument('--data_dir', default='./datasets', type=str, nargs='?', help='Folder directory in which the datasets are stored.')
 
-    parser.add_argument('--datasets', default=" ", type=str, nargs='+', help='The names of the datasets to use.')
+    parser.add_argument('--dataset', default=" ", type=str, nargs='+', help='The names of the datasets to use. Available: [DatasetSingleNote_split_, DatasetSingleNoteGrand_split_]')
 
     parser.add_argument('--epochs', default=60, type=int, nargs='?', help='Number of training epochs.')
 
@@ -27,7 +27,7 @@ def parse_args():
 
     parser.add_argument('--phantom', default=False, type=bool, nargs='+', help='If include phantom partials.')
 
-    parser.add_argument('--learning_rate', default=1e-6, type=float, nargs='?', help='Initial learning rate.')
+    parser.add_argument('--learning_rate', default=3e-4, type=float, nargs='?', help='Initial learning rate.')
 
     parser.add_argument('--only_inference', default=False, type=bool, nargs='?', help='When True, skips training and runs only inference on the pre-model. When False, runs training and inference on the trained model.')
 
@@ -35,10 +35,10 @@ def parse_args():
 
 
 def start_train(args):
-    print("######### Preparing for training/inference #########")
+    print("######### Preparing for training/inference harmonic model #########")
     print("\n")
     for key in args.keys:
-        filename = 'DatasetSingleNote_split_' + key
+        filename = args.dataset + key
         print("Key: ", key)
         MODEL_NAME = filename + '_' + '_' + str(args.harmonics) # Model name
 
