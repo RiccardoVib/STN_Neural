@@ -137,3 +137,38 @@ Example inference case:
 cd ./Code/
 python starter.py --dataset 'DatasetSingleNote_split' --only_inference True
 ```
+
+#### Chords
+
+To train chords models,
+```
+cd ./Code/Chords
+```
+
+and use the starter.py script.
+Ensure you have loaded the dataset into the chosen datasets folder
+
+Available options: 
+* --model_save_dir - Folder directory in which to store the trained models [str] (default ="./models")
+* --data_dir - Folder directory in which the datasets are stored [str] (default="./datasets")
+* --datasets - The names of the datasets to use. Available: [DatasetSingleNote_split_, DatasetSingleNoteGrand_split_]. [str] (default=" ")
+* --epochs - Number of training epochs. [int] (defaut=60)
+* --batch_size - The size of each batch. [int] (default=8)
+* --num_steps - Number of samples to generate each iteration. [int] (default=2400)
+* --learning_rate - the initial learning rate [float] (default=3e-4)
+* --only_inference - When True, skips training and runs only inference on the pre-model. When False, runs training and inference on the trained model. [bool] (default=False)
+
+Example training case: 
+```
+cd ./Code/
+
+python starter.py --dataset 'DiskChordUpright_split' --epochs 500 
+```
+
+To only run inference on an existing pre-trained model, use the "only_inference". In this case, ensure you have the existing model and dataset (to use for inference) both in their respective directories with corresponding names.
+
+Example inference case:
+```
+cd ./Code/
+python starter.py --dataset 'DiskChordUpright_split' --only_inference True
+```
