@@ -11,6 +11,7 @@ Visit our [companion page with audio examples](https://riccardovib.github.io/STN
 
 1. [Datasets](#datasets)
 2. [How to Train and Run Inference](#how-to-train-and-run-inference)
+3. [VST Download](#vst-download)
 
 <br/>
 
@@ -172,3 +173,8 @@ Example inference case:
 cd ./Code/
 python starter.py --dataset 'DiskChordUpright_split' --only_inference True
 ```
+
+
+# VST Download
+
+Coming soon...
