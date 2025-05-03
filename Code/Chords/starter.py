@@ -13,7 +13,7 @@ def parse_args():
 
     parser.add_argument('--data_dir', default='./datasets', type=str, nargs='?', help='Folder directory in which the datasets are stored.')
 
-    parser.add_argument('--dataset', default=" ", type=str, nargs='+', help='The names of the datasets to use. Available: [DatasetSingleNote_split_, DatasetSingleNoteGrand_split_]')
+    parser.add_argument('--dataset', default=" ", type=str, nargs='+', help='The names of the datasets to use. Available: DiskChordUpright_split')
 
     parser.add_argument('--epochs', default=60, type=int, nargs='?', help='Number of training epochs.')
 

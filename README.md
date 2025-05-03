@@ -151,7 +151,7 @@ Ensure you have loaded the dataset into the chosen datasets folder
 Available options: 
 * --model_save_dir - Folder directory in which to store the trained models [str] (default ="./models")
 * --data_dir - Folder directory in which the datasets are stored [str] (default="./datasets")
-* --datasets - The names of the datasets to use. Available: [DatasetSingleNote_split_, DatasetSingleNoteGrand_split_]. [str] (default=" ")
+* --datasets - The names of the datasets to use. Available: 'DiskChordUpright_split_'. [str] (default=" ")
 * --epochs - Number of training epochs. [int] (defaut=60)
 * --batch_size - The size of each batch. [int] (default=8)
 * --num_steps - Number of samples to generate each iteration. [int] (default=2400)
