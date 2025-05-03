@@ -26,9 +26,10 @@ cd ./Code
 pip install -r requirements.txt
 ```
 
-#### Harmonic Module
 
 The piano notes generation is split into three component: Harmonic, Transient and Noise.
+
+#### Harmonic Module
 
 To train harmonic models,
 ```
@@ -68,11 +69,9 @@ python starter.py --datasets 'pianoUpright' --harmonics 24 --only_inference True
 
 #### Transient Module
 
-The piano notes generation is split into three component: Harmonic, Transient and Noise.
-
-To train harmonic models,
+To train transient models,
 ```
-cd ./Code/HarmonicModule
+cd ./Code/TransientModule
 ```
 
 and use the starter.py script.
