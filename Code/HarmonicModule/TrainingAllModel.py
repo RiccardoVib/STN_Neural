@@ -25,13 +25,11 @@ def train(data_dir, **kwargs):
     batch_size = kwargs.get('batch_size', None)
     learning_rate = kwargs.get('learning_rate', 3e-4)
     harmonics = kwargs.get('harmonics', 24)
-    num_steps = kwargs.get('num_steps', 240)
     model_save_dir = kwargs.get('model_save_dir', '../../../TrainedModels')
     save_folder = kwargs.get('save_folder', 'ED_Testing')
     phase = kwargs.get('phase', 'B')
     inference = kwargs.get('inference', False)
     filename = kwargs.get('filename', '')
-    g = kwargs.get('g', 9)
     phan = kwargs.get('phan', False)
     epochs = kwargs.get('epochs', 10)
 
@@ -48,7 +46,9 @@ def train(data_dir, **kwargs):
         tf.config.experimental.set_memory_growth(gpu[0], True)
     
     fs = 24000
-    num_samples = batch_size*num_steps
+    g=9
+
+    num_samples = batch_size
     fft_size = int(2 ** np.ceil(np.log2(num_samples)))
     training_steps = 300000*5
 
@@ -87,12 +87,12 @@ def train(data_dir, **kwargs):
                        }
 
     # create the DataGenerator object to retrieve the data
-    test_gen = DataGeneratorPickles(filename, data_dir, set='val', steps=num_steps, model=None,
+    test_gen = DataGeneratorPickles(filename, data_dir, set='val', steps=1, model=None,
                                     batch_size=batch_size, stage=phase)
 
     # create the model
     model = PianoModel(batch_size=batch_size,
-                       num_steps=num_steps,
+                       num_steps=1,
                        fs=fs,
                        g=g,
                        phan=phan,
@@ -115,14 +115,12 @@ def train(data_dir, **kwargs):
     print('\n')
     print('training_steps:', training_steps)
     print('\n')
-    print('g:', g)
-    print('\n')
     print('phan:', phan)
     print('\n')
     
-    train_gen = DataGeneratorPickles(filename, data_dir, set='train', steps=num_steps, model=model,
+    train_gen = DataGeneratorPickles(filename, data_dir, set='train', steps=1, model=model,
                                      batch_size=batch_size, stage=phase)
-    test_gen = DataGeneratorPickles(filename, data_dir, set='val', steps=num_steps, model=model,
+    test_gen = DataGeneratorPickles(filename, data_dir, set='val', steps=1, model=model,
                                     batch_size=batch_size, stage=phase)
 
     # define callbacks: where to store the weights

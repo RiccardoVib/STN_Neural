@@ -1,94 +1,73 @@
 from TrainingAllModel import train
+import argparse
 
 
 """
 main script
 
 """
-# data_dir: the directory in which datasets are stored
-DATA_DIR = ''
-MODEL_SAVE_DIR = '../../TrainedModels'  # Models folder
-INFERENCE = False
-HARMONICS = 24 # number of partials to generate
-STEPS = 1 # output size
-LR = 3e-4 # initial leanring rate
-g = 9 # starting mode for compute the longitudinal displacements
-phan = False # if include phantom partials
-A = True # phase training decay rates
-B = True # phase training inharmonic factor
-    
-if INFERENCE:
-    B = False
+def parse_args():
+    parser = argparse.ArgumentParser(description='Trains the harmonic piano model. Can also be used to run pure inference.')
 
-keys = ['C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3', 'G#3', 'A3', 'A#3', 'B3', 'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4']
+    parser.add_argument('--model_save_dir', default='./models', type=str, nargs='?', help='Folder directory in which to store the trained models.')
 
-batch_size = 2**17
+    parser.add_argument('--data_dir', default='./datasets', type=str, nargs='?', help='Folder directory in which the datasets are stored.')
+
+    parser.add_argument('--datasets', default=" ", type=str, nargs='+', help='The names of the datasets to use.')
+
+    parser.add_argument('--epochs', default=60, type=int, nargs='?', help='Number of training epochs.')
+
+    parser.add_argument('--batch_size', default=2**17, type=int, nargs='?', help='Batch size.')
+
+    parser.add_argument('--harmonics', default=24, type=int, nargs='?', help='Number of harmonics to synthetize.')
+
+    parser.add_argument('--phase', default='A', type=str, nargs='+', help='which phase to train: A train partials amplitudes, B the inharmonic coefficient')
+
+    parser.add_argument('--keys', default=['C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3', 'G#3', 'A3', 'A#3', 'B3', 'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4'], type=[str], nargs='+', help='which key model to train')
+
+    parser.add_argument('--phantom', default=False, type=bool, nargs='+', help='If include phantom partials.')
+
+    parser.add_argument('--learning_rate', default=1e-6, type=float, nargs='?', help='Initial learning rate.')
+
+    parser.add_argument('--only_inference', default=False, type=bool, nargs='?', help='When True, skips training and runs only inference on the pre-model. When False, runs training and inference on the trained model.')
+
+    return parser.parse_args()
 
 
-for key in keys:
+def start_train(args):
+    print("######### Preparing for training/inference #########")
+    print("\n")
+    for key in args.keys:
+        filename = 'DatasetSingleNote_split_' + key
+        print("Key: ", key)
+        MODEL_NAME = filename + '_' + '_' + str(args.harmonics) # Model name
 
-    filename = 'DatasetSingleNote_split_' + key
+        if args.only_inference:
+            train(data_dir=args.data_dir,
+                  model_save_dir=args.model_save_dir,
+                  save_folder=MODEL_NAME,
+                  learning_rate=args.learning_rate,
+                  epochs=args.epochs,
+                  phan=args.phantom,
+                  harmonics=args.harmonics,
+                  phase=args.phase,
+                  inference=True)
+
+        else:
+            train(data_dir=args.data_dir,
+                  model_save_dir=args.model_save_dir,
+                  save_folder=MODEL_NAME,
+                  learning_rate=args.learning_rate,
+                  epochs=args.epochs,
+                  phan=args.phantom,
+                  harmonics=args.harmonics,
+                  phase=args.phase,
+                  inference=False)
 
 
-    MODEL_NAME = filename + '_' + str(STEPS) + '_' + str(HARMONICS) + '' # Model name
+def main():
+    args = parse_args()
+    start_train(args)
 
-        
-    if A == True:
-        PHASE = 'A'
-
-        train(data_dir=DATA_DIR,
-              filename=filename,
-              save_folder=MODEL_NAME,
-              model_save_dir=MODEL_SAVE_DIR,
-              learning_rate=LR,
-              g=g,
-              phan=phan,
-              epochs=10000,
-              batch_size=batch_size,
-              num_steps=STEPS,
-              harmonics=HARMONICS,
-              phase=PHASE,
-              inference=INFERENCE)
-
-        print("---------Finish A---------")
-        print('\n')
-
-    if B == True:
-        PHASE = 'B'
-        train(data_dir=DATA_DIR,
-              filename=filename,
-              save_folder=MODEL_NAME,
-              model_save_dir=MODEL_SAVE_DIR,
-              learning_rate=LR,
-              g=g,
-              phan=phan,
-              epochs=3000,
-              batch_size=batch_size,
-              num_steps=STEPS,
-              harmonics=HARMONICS,
-              phase=PHASE,
-              inference=INFERENCE)
-
-        print("---------Finish B---------")
-        print('\n')
-
-        
-    if A == True:
-        PHASE = 'A'
-
-        train(data_dir=DATA_DIR,
-              filename=filename,
-              save_folder=MODEL_NAME,
-              model_save_dir=MODEL_SAVE_DIR,
-              learning_rate=LR,
-              g=g,
-              phan=phan,
-              epochs=10000,
-              batch_size=batch_size,
-              num_steps=STEPS,
-              harmonics=HARMONICS,
-              phase=PHASE,
-              inference=INFERENCE)
-
-        print("---------Finish A---------")
-        print('\n')
+if __name__ == '__main__':
+    main()
