@@ -3,12 +3,11 @@ import tensorflow as tf
 from DatasetsClass import DataGeneratorPickles
 from UtilsForTrainings import plotTraining, writeResults, checkpoints, MyLRScheduler, render_results
 from LossFunctions import STFT_loss
-import pickle
-import random
+#import random
 import numpy as np
 from Model import HarmonicEnhancementModel
 
-def trainH(data_dir, **kwargs):
+def train(data_dir, **kwargs):
     """
       :param data_dir: the directory in which dataset are stored [string]
       :param batch_size: the size of each batch [int]

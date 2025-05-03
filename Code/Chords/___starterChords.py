@@ -1,4 +1,4 @@
-from Training import trainH
+from Training import train
 
 """
 main script
@@ -18,7 +18,7 @@ MODEL_SAVE_DIR = '' # Models folder
 MODEL_NAME = 'Chord_finals' #### Model name
 
 
-trainH(data_dir=DATA_DIR,
+train(data_dir=DATA_DIR,
       save_folder=MODEL_NAME,
       model_save_dir=MODEL_SAVE_DIR,
       learning_rate=LR,

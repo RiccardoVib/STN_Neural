@@ -1,4 +1,4 @@
-from TrainingTransientModel import train
+from Training import train
 import argparse
 
 
@@ -7,7 +7,7 @@ main script
 
 """
 def parse_args():
-    parser = argparse.ArgumentParser(description='Trains the transient piano model. Can also be used to run pure inference.')
+    parser = argparse.ArgumentParser(description='Trains the chord piano model. Can also be used to run pure inference.')
 
     parser.add_argument('--model_save_dir', default='./models', type=str, nargs='?', help='Folder directory in which to store the trained models.')
 
@@ -17,9 +17,11 @@ def parse_args():
 
     parser.add_argument('--epochs', default=60, type=int, nargs='?', help='Number of training epochs.')
 
-    parser.add_argument('--batch_size', default=2**17, type=int, nargs='?', help='Batch size.')
+    parser.add_argument('--batch_size', default=8, type=int, nargs='?', help='Batch size.')
 
-    parser.add_argument('--keys', default=['C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3', 'G#3', 'A3', 'A#3', 'B3', 'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4'], type=str, nargs='+', help='which key model to train')
+    parser.add_argument('--mini_batch_size', default=2400, type=int, nargs='?', help='Mini Batch size.')
+
+    parser.add_argument('--steps', default=1, type=int, nargs='?', help='Number of samples to generate each iteration.')
 
     parser.add_argument('--learning_rate', default=3e-4, type=float, nargs='?', help='Initial learning rate.')
 
@@ -31,18 +33,16 @@ def parse_args():
 def start_train(args):
     print("######### Preparing for training/inference transient model#########")
     print("\n")
-    for key in args.keys:
-        filename = args.dataset + key
-        print("Key: ", key)
-        MODEL_NAME = filename # Model name
 
-        train(data_dir=args.data_dir,
-            model_save_dir=args.model_save_dir,
-            save_folder=MODEL_NAME,
-            batch_size=args.batch_size,
-            learning_rate=args.learning_rate,
-            epochs=args.epochs,
-            inference=args.only_inference)
+    train(data_dir=args.data_dir,
+        model_save_dir=args.model_save_dir,
+        save_folder=f'{args.dataset}_{args.steps}',
+        batch_size=args.batch_size,
+        mini_batch_size=args.mini_batch_size,
+        steps=args.steps,
+        learning_rate=args.learning_rate,
+        epochs=args.epochs,
+        inference=args.only_inference)
 
 def main():
     args = parse_args()

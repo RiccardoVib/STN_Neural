@@ -23,7 +23,7 @@ def parse_args():
 
     parser.add_argument('--phase', default='A', type=str, nargs='+', help='which phase to train: A train partials amplitudes, B the inharmonic coefficient')
 
-    parser.add_argument('--keys', default=['C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3', 'G#3', 'A3', 'A#3', 'B3', 'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4'], type=[str], nargs='+', help='which key model to train')
+    parser.add_argument('--keys', default=['C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3', 'G#3', 'A3', 'A#3', 'B3', 'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4'], type=str, nargs='+', help='which key model to train')
 
     parser.add_argument('--phantom', default=False, type=bool, nargs='+', help='If include phantom partials.')
 
@@ -45,6 +45,7 @@ def start_train(args):
         if args.only_inference:
             train(data_dir=args.data_dir,
                   model_save_dir=args.model_save_dir,
+                  batch_size=args.batch_size,
                   save_folder=MODEL_NAME,
                   learning_rate=args.learning_rate,
                   epochs=args.epochs,
@@ -56,6 +57,7 @@ def start_train(args):
         else:
             train(data_dir=args.data_dir,
                   model_save_dir=args.model_save_dir,
+                  batch_size=args.batch_size,
                   save_folder=MODEL_NAME,
                   learning_rate=args.learning_rate,
                   epochs=args.epochs,
