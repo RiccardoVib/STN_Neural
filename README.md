@@ -1,6 +1,6 @@
-# Sine, Trasnient, Noise Neural Modeling of Piano Notes
+# Sine, Transient, Noise Neural Modeling of Piano Notes
 
-This code repository for the article _Sine, Trasnient, Noise Neural Modeling of Piano Notes_, Frontiers in Signal Processing 4 (2025).
+This code repository for the article _Sine, Transient, Noise Neural Modeling of Piano Notes_, Frontiers in Signal Processing 4 (2025).
 
 This repository contains all the necessary utilities to use our architecture. Find the code located inside the "./Code" folder, and the weights of pre-trained models inside the "./Weights" folder
 
